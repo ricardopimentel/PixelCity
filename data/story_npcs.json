@@ -1,0 +1,164 @@
+{
+    "story_npcs": [
+        {
+            "id": "mentor",
+            "name": "Lucas",
+            "gender": "male",
+            "orientation": "heterosexual",
+            "friendship": 50,
+            "romanced": false,
+            "recentTopics": [],
+            "contactAdded": true,
+            "interests": [
+                "books",
+                "travel",
+                "humor"
+            ],
+            "isPaused": false,
+            "x": -100,
+            "y": 500,
+            "speed": 0,
+            "direction": 0,
+            "frame": 0,
+            "animTimer": 0,
+            "face": {
+                "pendingType": null,
+                "isAnimating": false,
+                "currentFrame": 0,
+                "type": "smile",
+                "cycles": 0
+            },
+            "chatBubble": null,
+            "state": {
+                "skinColor": "#8d5524",
+                "body": {
+                    "index": 0,
+                    "color": null
+                },
+                "hair": {
+                    "index": 3,
+                    "color": "#2c3e50"
+                },
+                "torso": {
+                    "index": 5,
+                    "color": "#f39c12"
+                },
+                "legs": {
+                    "index": 1,
+                    "color": "#34495e"
+                },
+                "feet": {
+                    "index": 2,
+                    "color": "#000000"
+                }
+            }
+        },
+        {
+            "id": "npc_ze",
+            "name": "Seu Zé",
+            "gender": "male",
+            "orientation": "heterosexual",
+            "friendship": 0,
+            "romanced": false,
+            "recentTopics": [],
+            "contactAdded": false,
+            "interests": [
+                "cooking",
+                "sports",
+                "money"
+            ],
+            "isPaused": true,
+            "initial_room": "coffee_shop",
+            "x": 350,
+            "y": 300,
+            "speed": 0,
+            "direction": 0,
+            "frame": 0,
+            "animTimer": 0,
+            "face": {
+                "pendingType": null,
+                "isAnimating": false,
+                "currentFrame": 0,
+                "type": "static",
+                "cycles": 0
+            },
+            "chatBubble": null,
+            "state": {
+                "skinColor": "#f1c27d",
+                "body": {
+                    "index": 0,
+                    "color": null
+                },
+                "hair": {
+                    "index": 9,
+                    "color": "#7f8c8d"
+                },
+                "torso": {
+                    "index": 11,
+                    "color": "#000000"
+                },
+                "legs": {
+                    "index": 8,
+                    "color": "#000000"
+                },
+                "feet": {
+                    "index": 0,
+                    "color": "#000000"
+                }
+            }
+        },
+        {
+            "id": "npc_landlord",
+            "name": "Seu Jorge",
+            "gender": "male",
+            "orientation": "heterosexual",
+            "friendship": -10,
+            "romanced": false,
+            "recentTopics": [],
+            "contactAdded": false,
+            "interests": [
+                "money",
+                "rules",
+                "cleaning"
+            ],
+            "isPaused": true,
+            "x": 200,
+            "y": 480,
+            "speed": 0,
+            "direction": 0,
+            "frame": 0,
+            "animTimer": 0,
+            "face": {
+                "pendingType": null,
+                "isAnimating": false,
+                "currentFrame": 0,
+                "type": "angry",
+                "cycles": 0
+            },
+            "chatBubble": null,
+            "state": {
+                "skinColor": "#e0ac69",
+                "body": {
+                    "index": 1,
+                    "color": null
+                },
+                "hair": {
+                    "index": 4,
+                    "color": "#e0e0e0"
+                },
+                "torso": {
+                    "index": 8,
+                    "color": "#8e44ad"
+                },
+                "legs": {
+                    "index": 3,
+                    "color": "#000000"
+                },
+                "feet": {
+                    "index": 1,
+                    "color": "#000000"
+                }
+            }
+        }
+    ]
+}

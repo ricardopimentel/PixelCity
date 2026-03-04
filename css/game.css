@@ -1,0 +1,619 @@
+/* High School / Notebook Theme */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Roboto:wght@300;400;700&display=swap');
+
+:root {
+    --paper-bg: #fdfdfd;
+    --line-color: #a2a2a2;
+    /* Light blue/grey for lines */
+    --margin-color: #ffcccc;
+    /* Red margin line */
+    --ink-color: #2c3e50;
+    /* Dark blue pen color */
+    --pencil-color: #555;
+    --highlight-color: #fff9c4;
+    /* Yellow highlighter */
+    --accent-color: #e74c3c;
+    /* Teacher's red pen */
+    --sticker-border: #f0f0f0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Patrick Hand', cursive;
+    /* Handwritten feel */
+    background-color: #e0e0e0;
+    /* Desk color */
+    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+    /* Subtle wood texture */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* keep center, but with min-height it will scroll if needed */
+    color: var(--ink-color);
+    box-sizing: border-box;
+    overflow: hidden;
+    /* Prevent scrollbars when fullscreen */
+}
+
+#game-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    /* Notebook Paper Look */
+    background-color: var(--paper-bg);
+    background-image:
+        linear-gradient(90deg, transparent 79px, #abced4 79px, #abced4 81px, transparent 81px),
+        /* Red margin */
+        linear-gradient(#eee .1em, transparent .1em);
+    /* Horizontal lines */
+    background-size: 100% 1.5em;
+    /* Line height */
+    box-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.3),
+        0 0 40px rgba(0, 0, 0, 0.1) inset;
+    overflow: hidden;
+}
+
+/* Screen Management */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease-in-out;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.screen.active {
+    display: flex;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Start Screen */
+/* Doodle background styling could go here */
+
+
+.game-title {
+    font-size: 5rem;
+    font-weight: normal;
+    text-align: center;
+    margin-bottom: 50px;
+    color: var(--ink-color);
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+    transform: rotate(-3deg);
+    background: var(--highlight-color);
+    padding: 10px 30px;
+    border-radius: 5px 25px 5px 25px;
+    /* Marker stroke shape */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Button Styles - "Sticker" or "Sketch" look */
+.btn-primary {
+    padding: 15px 40px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 2rem;
+    color: white;
+    background: var(--accent-color);
+    border: none;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    /* Hand-drawn box shape */
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    transform: rotate(2deg);
+}
+
+.btn-primary:hover {
+    transform: scale(1.05) rotate(1deg);
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Character Creation Screen */
+#character-creation-screen {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 40px;
+    align-items: flex-start;
+    /* Align to top lines */
+}
+
+.char-preview-container {
+    flex: 0.8;
+    /* Reduced width share */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-right: 20px;
+    margin-left: 60px;
+    /* Push past the margin line */
+}
+
+.preview-box {
+    width: 60px;
+    /* Fits 48px + padding/border */
+    height: 140px;
+    /* Fits 120px + padding/border */
+    border: 2px solid var(--ink-color);
+    border-radius: 10px;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+    /* "Photo taped to paper" look */
+    position: relative;
+}
+
+.preview-box::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 40%;
+    width: 40px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid #ddd;
+    transform: rotate(-5deg);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#char-preview-canvas {
+    image-rendering: pixelated;
+    width: 48px;
+    height: 120px;
+}
+
+.preview-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.char-controls-container {
+    flex: 1.5;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.7);
+    /* Slight fade for readability over lines */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.05);
+    transform: rotate(0.5deg);
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.char-controls-cont.wardrobe-item-desc {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Chat App Messages Styling */
+.chat-message {
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.chat-message.received {
+    background-color: #ffffff;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.chat-message.sent {
+    background-color: #2ecc71;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+.chat-sender-name {
+    font-weight: bold;
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+    color: #888;
+}
+
+.chat-timestamp {
+    font-size: 0.7rem;
+    color: #aaa;
+    text-align: right;
+    margin-top: 5px;
+}
+
+/* NPC Dialogue Buttons */
+.btn-dialogue {
+    background: #fdfdfd;
+    border: 2px solid #bdc3c7;
+    border-radius: 15px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-family: 'Patrick Hand', cursive;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.btn-dialogue:hover {
+    background: #ecf0f1;
+    border-color: #3498db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-dialogue:active {
+    transform: translateY(0);
+}
+
+/* Chat App Messages Styling */
+.chat-message {
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.chat-message.received {
+    background-color: #ffffff;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.chat-message.sent {
+    background-color: #2ecc71;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+.chat-sender-name {
+    font-weight: bold;
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+    color: #888;
+}
+
+.chat-timestamp {
+    font-size: 0.7rem;
+    color: #aaa;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.char-controls-container h2 {
+    font-size: 2rem;
+    /* Was 2.5rem */
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-decoration: underline;
+    text-decoration-color: var(--accent-color);
+    text-decoration-style: wavy;
+}
+
+/* Smartphone Keyboard Navigation Selection */
+.phone-navigable {
+    transition: all 0.2s ease;
+}
+
+.phone-selected {
+    outline: 3px solid #f1c40f !important;
+    outline-offset: 2px;
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+    background-color: rgba(241, 196, 15, 0.2) !important;
+}
+
+.phone-selected.app-icon div {
+    outline: 3px solid #f1c40f !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.8) !important;
+}
+
+/* Contact List Item inside Phone */
+.phone-contact-item {
+    padding: 10px;
+    border-radius: 10px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.phone-contact-item.phone-selected {
+    background: #fff9c4 !important;
+}
+
+/* Chat Option Item inside Phone */
+.phone-chat-option {
+    padding: 8px 12px;
+    border-radius: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.phone-chat-option.phone-selected {
+    background: #fff9c4 !important;
+    border-color: #f1c40f !important;
+}
+
+.phone-chat-option.disabled {
+    opacity: 0.5;
+    color: #999;
+}
+
+/* Form Controls */
+.controls-label {
+    margin-right: 15px;
+}
+
+/* Attributes Screen Styles */
+.attribute-row {
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--pencil-color);
+}
+
+.attribute-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 120px;
+    justify-content: center;
+}
+
+.interests-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.interest-btn {
+    background: transparent;
+    border: 2px solid var(--ink-color);
+    color: var(--ink-color);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.interest-btn:hover {
+    background: var(--highlight-color);
+    transform: translateY(-2px);
+}
+
+.interest-btn.selected {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.control-group h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.4rem;
+    /* Was 1.8rem */
+    color: var(--accent-color);
+    border-bottom: 2px dashed var(--pencil-color);
+    display: inline-block;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.control-row label {
+    flex: 1;
+    font-weight: bold;
+    font-size: 1.1rem;
+    /* Was 1.4rem */
+}
+
+/* Inputs styled as handwritten fill-ins */
+.input-text,
+select {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--ink-color);
+    color: var(--ink-color);
+    padding: 3px 6px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.1rem;
+    /* Was 1.3rem */
+    width: 60%;
+    outline: none;
+}
+
+.input-text:focus,
+select:focus {
+    border-bottom-color: var(--accent-color);
+}
+
+/* Style Selector Arrows */
+.style-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 2;
+}
+
+.arrow-btn {
+    background: none;
+    border: 2px solid var(--ink-color);
+    color: var(--ink-color);
+    width: 24px;
+    /* Was 30px */
+    height: 24px;
+    /* Was 30px */
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1rem;
+    /* Was 1.2rem */
+    transition: transform 0.2s;
+}
+
+.arrow-btn:hover {
+    transform: scale(1.2);
+    background: var(--highlight-color);
+}
+
+.style-display {
+    flex: 1;
+    text-align: center;
+    font-size: 1.1rem;
+    /* Was 1.4rem */
+    font-weight: bold;
+}
+
+.color-picker-wrapper {
+    width: 28px;
+    /* Was 35px */
+    height: 28px;
+    /* Was 35px */
+    border-radius: 50%;
+    border: 2px solid var(--ink-color);
+    /* Hand-drawn circle look */
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.color-picker-wrapper input[type="color"] {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    cursor: pointer;
+    border: none;
+}
+
+/* Footer Buttons */
+.screen-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    padding: 6px 12px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1rem;
+    /* Was 1.2rem */
+    background: white;
+    border: 2px solid var(--ink-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 2px 2px 0 var(--pencil-color);
+}
+
+.btn-secondary:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--pencil-color);
+    background: #fafafa;
+}
+
+/* Scrollbar (for webkit) */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--pencil-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-color);
+}
+
+/* Smartwatch NPC Dialogue System */
+.smartwatch-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 20px;
+    /* Fixed height for math */
+    width: 100%;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-family: 'Patrick Hand', cursive;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: scale(0.85);
+    cursor: pointer;
+    margin: 0;
+    padding: 0 10px;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.smartwatch-option.disabled {
+    color: rgba(255, 50, 50, 0.3);
+    cursor: not-allowed;
+}
+
+.smartwatch-option.selected {
+    color: #fff;
+    transform: scale(1.15);
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}

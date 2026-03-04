@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High School Life</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Keeping old style just in case of fallback, but game.css overrides -->
+    <link rel="stylesheet" href="css/game.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Tela Inicial -->
+        <div id="start-screen" class="screen active">
+            <h1 class="game-title">High School Life</h1>
+            <button id="btn-start-game" class="btn-primary">Criar Novo Personagem</button>
+            <button id="btn-load-game" class="btn-primary"
+                style="display: none; background: #6c5ce7; margin-top: 10px;">Continuar Vida</button>
+            <button id="btn-delete-save" class="btn-primary"
+                style="display: none; background: #e74c3c; margin-top: 10px;">Apagar Progresso</button>
+        </div>
+
+        <!-- Tela de Criação de Personagem -->
+        <div id="character-creation-screen" class="screen">
+            <div class="char-preview-container">
+                <div class="preview-box">
+                    <canvas id="char-preview-canvas" width="48" height="120"></canvas>
+                </div>
+                <div class="preview-controls">
+                    <button id="btn-rotate-char" class="btn-secondary">Girar</button>
+                    <select id="anim-type" class="input-text" style="width: auto; margin-left: 10px;">
+                        <option value="walk">Andar</option>
+                        <option value="idle">Parado</option>
+                    </select>
+                    <button id="btn-random-char" class="btn-secondary" style="margin-left: 10px;">Aleatório</button>
+                </div>
+                <!-- Face selections -->
+                <div class="face-controls"
+                    style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
+                    <button class="btn-face btn-secondary active-face" data-face="static" title="Estática">😐</button>
+                    <button class="btn-face btn-secondary" data-face="smile" title="Sorriso">😀</button>
+                    <button class="btn-face btn-secondary" data-face="angry" title="Zangado">😠</button>
+                    <button class="btn-face btn-secondary" data-face="kissing" title="Beijo">😗</button>
+                    <button class="btn-face btn-secondary" data-face="sad" title="Triste">😢</button>
+                    <button class="btn-face btn-secondary" data-face="boring" title="Entediado">😑</button>
+                    <button class="btn-face btn-secondary" data-face="tired" title="Cansado">😫</button>
+                </div>
+            </div>
+
+            <div class="char-controls-container">
+                <h2>Crie seu Personagem</h2>
+
+                <div class="control-group">
+                    <div class="control-row">
+                        <label>Nome:</label>
+                        <input type="text" id="char-name" class="input-text" placeholder="Seu Nome">
+                    </div>
+                    <div class="control-row">
+                        <label>Gênero:</label>
+                        <select id="char-gender" class="input-text">
+                            <option value="male">Masculino</option>
+                            <option value="female" disabled>Feminino (Em breve)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Aparência</h3>
+                    <div class="control-row">
+                        <label>Pele:</label>
+                        <!-- Added Body Style Selector -->
+                        <div class="style-selector">
+                            <button class="arrow-btn" data-target="body" data-dir="-1">←</button>
+                            <span id="style-text-body" class="style-display">Estilo 1</span>
+                            <button class="arrow-btn" data-target="body" data-dir="1">→</button>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="color-skin" value="#ffdbac">
+                        </div>
+                    </div>
+
+                    <div class="control-row">
+                        <label>Cabelo:</label>
+                        <div class="style-selector">
+                            <button class="arrow-btn" data-target="hair" data-dir="-1">←</button>
+                            <span id="style-text-hair" class="style-display">Estilo 1</span>
+                            <button class="arrow-btn" data-target="hair" data-dir="1">→</button>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="color-hair" value="#000000">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Roupas</h3>
+                    <div class="control-row">
+                        <label>Camisa:</label>
+                        <div class="style-selector">
+                            <button class="arrow-btn" data-target="torso" data-dir="-1">←</button>
+                            <span id="style-text-torso" class="style-display">Estilo 1</span>
+                            <button class="arrow-btn" data-target="torso" data-dir="1">→</button>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="color-torso" value="#ff0000">
+                        </div>
+                    </div>
+
+                    <div class="control-row">
+                        <label>Calça:</label>
+                        <div class="style-selector">
+                            <button class="arrow-btn" data-target="legs" data-dir="-1">←</button>
+                            <span id="style-text-legs" class="style-display">Estilo 1</span>
+                            <button class="arrow-btn" data-target="legs" data-dir="1">→</button>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="color-legs" value="#0000ff">
+                        </div>
+                    </div>
+
+                    <div class="control-row">
+                        <label>Sapatos:</label>
+                        <div class="style-selector">
+                            <button class="arrow-btn" data-target="feet" data-dir="-1">←</button>
+                            <span id="style-text-feet" class="style-display">Estilo 1</span>
+                            <button class="arrow-btn" data-target="feet" data-dir="1">→</button>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="color-feet" value="#333333">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screen-footer">
+                    <button id="btn-finish-char" class="btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela de Atributos e Interesses -->
+        <div id="attributes-screen" class="screen">
+            <div class="char-controls-container" style="max-width: 600px; width: 90%;">
+                <h2>Sua Personalidade</h2>
+                <p>Distribua <span id="points-remaining"
+                        style="font-weight: bold; color: var(--accent-color);">10</span> pontos iniciais:</p>
+
+                <div class="control-group">
+                    <!-- Beleza -->
+                    <div class="control-row attribute-row">
+                        <label>Beleza:</label>
+                        <div class="attribute-controls">
+                            <button class="arrow-btn btn-attr-minus" data-attr="beauty">-</button>
+                            <span id="attr-beauty" class="style-display">0</span>
+                            <button class="arrow-btn btn-attr-plus" data-attr="beauty">+</button>
+                        </div>
+                    </div>
+                    <!-- Inteligência -->
+                    <div class="control-row attribute-row">
+                        <label>Inteligência:</label>
+                        <div class="attribute-controls">
+                            <button class="arrow-btn btn-attr-minus" data-attr="intelligence">-</button>
+                            <span id="attr-intelligence" class="style-display">0</span>
+                            <button class="arrow-btn btn-attr-plus" data-attr="intelligence">+</button>
+                        </div>
+                    </div>
+                    <!-- Carisma -->
+                    <div class="control-row attribute-row">
+                        <label>Carisma:</label>
+                        <div class="attribute-controls">
+                            <button class="arrow-btn btn-attr-minus" data-attr="charisma">-</button>
+                            <span id="attr-charisma" class="style-display">0</span>
+                            <button class="arrow-btn btn-attr-plus" data-attr="charisma">+</button>
+                        </div>
+                    </div>
+                    <!-- Físico -->
+                    <div class="control-row attribute-row">
+                        <label>Físico:</label>
+                        <div class="attribute-controls">
+                            <button class="arrow-btn btn-attr-minus" data-attr="fitness">-</button>
+                            <span id="attr-fitness" class="style-display">0</span>
+                            <button class="arrow-btn btn-attr-plus" data-attr="fitness">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Interesses</h3>
+                    <p style="font-size: 0.9em; margin-top: -5px;">Selecione o que você gosta:</p>
+                    <div id="interests-grid" class="interests-grid">
+                        <button class="interest-btn" data-interest="pets">🐶 Pets</button>
+                        <button class="interest-btn" data-interest="cars">🏎️ Carros</button>
+                        <button class="interest-btn" data-interest="humor">😂 Humor</button>
+                        <button class="interest-btn" data-interest="movies">🎬 Filmes</button>
+                        <button class="interest-btn" data-interest="sports">⚽ Esportes</button>
+                        <button class="interest-btn" data-interest="music">🎵 Música</button>
+                        <button class="interest-btn" data-interest="art">🎨 Arte</button>
+                        <button class="interest-btn" data-interest="cooking">🍳 Culinária</button>
+                        <button class="interest-btn" data-interest="gaming">🎮 Jogos</button>
+                        <button class="interest-btn" data-interest="books">📚 Livros</button>
+                        <button class="interest-btn" data-interest="tech">💻 Tecnologia</button>
+                        <button class="interest-btn" data-interest="travel">✈️ Viagens</button>
+                    </div>
+                </div>
+
+                <div class="screen-footer">
+                    <button id="btn-start-life" class="btn-primary">Começar a Viver</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela do Jogo -->
+        <div id="game-screen" class="screen"
+            style="position: relative; padding: 0; margin: 0; width: 100%; height: 100%;">
+            <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+
+                <!-- Game Stats HUD (Top Bar) -->
+                <div id="game-stats-overlay"
+                    style="position: fixed; top: 0; left: 0; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 50;">
+                    <div
+                        style="font-size: 18px; font-weight: bold; border-right: 1px solid #555; padding-right: 15px; display: flex; align-items: center; gap: 15px;">
+                        <div>
+                            <span style="font-size: 20px;">🗣️</span>
+                            <span id="stat-char-name" style="color: #fff; font-weight: bold;"></span>
+                        </div>
+                        <div style="border-left: 1px solid #555; padding-left: 15px;">
+                            🕒
+                            <span id="stat-time">08:00</span>
+                        </div>
+                    </div>
+                    <div style="flex: 1; display: flex; justify-content: space-around; padding: 0 15px;">
+                        <div>❤️ Saúde: <span id="stat-health" style="color: #ff6b6b; font-weight: bold;">100%</span>
+                        </div>
+                        <div>🍔 Fome: <span id="stat-hunger" style="color: #feca57; font-weight: bold;">100%</span>
+                        </div>
+                        <div>🚿 Higiene: <span id="stat-hygiene" style="color: #48dbfb; font-weight: bold;">100%</span>
+                        </div>
+                        <div>🧻 Banheiro: <span id="stat-bladder" style="color: #f1c40f; font-weight: bold;">100%</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 16px; border-left: 1px solid #555; padding-left: 15px;">💰 Dinheiro: <span
+                            id="stat-money" style="color: #1dd1a1; font-weight: bold;">$500</span></div>
+
+                    <!-- Right HUD Buttons -->
+                    <div style="display: flex; gap: 10px; margin-left: 15px;">
+                        <button id="btn-smartphone"
+                            style="padding: 5px; width: 35px; background: #2f3640; border: 2px solid #555; border-radius: 5px; color: white; cursor: pointer; font-size: 1.2rem; display: flex; justify-content: center; align-items: center;"
+                            title="Celular (T)">📱</button>
+                        <button id="btn-profile"
+                            style="padding: 5px 10px; background: #6c5ce7; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold;">Perfil
+                            (P)</button>
+                    </div>
+                </div>
+
+                <!-- Painel de Informações do NPC (Lado Direito) -->
+                <div id="npc-debug-panel"
+                    style="display: none; position: fixed; top: 60px; right: 20px; width: 220px; background: rgba(0, 0, 0, 0.85); color: white; border: 2px solid #555; border-radius: 8px; padding: 15px; font-family: 'Courier New', Courier, monospace; z-index: 40; box-shadow: -2px 4px 10px rgba(0,0,0,0.5);">
+                    <h3 id="panel-npc-name"
+                        style="margin: 0 0 10px 0; border-bottom: 1px dashed #777; padding-bottom: 5px; color: #ff9ff3; text-align: center;">
+                        Nome do NPC</h3>
+
+                    <div style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <div><strong style="color: #48dbfb;">Gênero:</strong> <span id="panel-npc-gender">---</span>
+                        </div>
+                        <div><strong style="color: #feca57;">Orientação:</strong> <span
+                                id="panel-npc-orientation">---</span></div>
+                        <div><strong style="color: #1dd1a1;">Amizade:</strong> <span id="panel-npc-friendship">0%</span>
+                        </div>
+
+                        <div style="margin-top: 5px;">
+                            <strong style="color: #ff6b6b; display: block; margin-bottom: 5px;">Acha Legal
+                                (Interesses):</strong>
+                            <div id="panel-npc-interests" style="display: flex; flex-wrap: wrap; gap: 3px;">
+                                <!-- Tags via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <canvas id="game-canvas"
+                    style="background-color: #333; display: block; width: 100%; height: 100%; flex-grow: 1; margin: 0; padding: 0;"></canvas>
+            </div>
+
+            <!-- Modal SmartPhone -->
+            <div id="modal-smartphone" class="modal-overlay"
+                style="display: none; position: absolute; z-index: 100; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+                <div
+                    style="background: #111; padding: 10px 10px 5px 10px; border-radius: 35px; width: 300px; height: 550px; text-align: center; color: white; border: 4px solid #333; position: relative; display: flex; flex-direction: column; font-family: sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+
+                    <!-- Phone Notch (On top of screen) -->
+                    <div
+                        style="width: 40%; height: 25px; background: #111; border-radius: 0 0 10px 10px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50;">
+                    </div>
+
+                    <!-- Inner Screen -->
+                    <div
+                        style="background: url('https://www.transparenttextures.com/patterns/cubes.png') #4a69bd; flex-grow: 1; border-radius: 25px; overflow: hidden; display: flex; flex-direction: column; position: relative; margin-bottom: 10px;">
+
+                        <!-- Status Bar -->
+                        <div
+                            style="background: rgba(0,0,0,0.3); color: white; display: flex; justify-content: space-between; padding: 2px 15px; font-size: 11px; z-index: 10; padding-top: 5px;">
+                            <span id="phone-time">12:00</span>
+                            <span>100% 🔋</span>
+                        </div>
+
+                        <!-- Home Screen Grid -->
+                        <div
+                            style="flex-grow: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 25px 10px 10px 10px; align-content: start;">
+                            <!-- Apps -->
+                            <div class="app-icon" data-app="messages"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #2ecc71; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; position: relative;">
+                                    💬
+                                    <div id="phone-msg-badge"
+                                        style="display: none; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: red; border-radius: 50%; border: 2px solid #2f3640;">
+                                    </div>
+                                </div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">Mensagens</span>
+                            </div>
+                            <div class="app-icon" data-app="contacts"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #0984e3; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem;">
+                                    📞</div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">Contatos</span>
+                            </div>
+                            <div class="app-icon" data-app="taxi"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #f1c40f; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem;">
+                                    🚕</div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">Táxi</span>
+                            </div>
+                            <div class="app-icon" data-app="ifood"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #e84393; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem;">
+                                    🍔</div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">iFood</span>
+                            </div>
+                            <div class="app-icon" data-app="ereader"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #00b894; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem;">
+                                    📚</div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">E-Reader</span>
+                            </div>
+                            <div class="app-icon" data-app="store"
+                                style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                                <div
+                                    style="width: 50px; height: 50px; background: #e17055; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem;">
+                                    👕</div>
+                                <span style="font-size: 0.8rem; margin-top: 5px;">Roupas</span>
+                            </div>
+                        </div>
+
+                        <!-- App Inner View: Contacts List -->
+                        <div id="phone-app-contacts-list"
+                            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; border-radius: 0; flex-direction: column; color: black; z-index: 10; padding-top: 25px;">
+                            <div
+                                style="background: #0984e3; color: white; padding: 15px 10px; display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                                <span style="flex-grow: 1; text-align: center;">Agenda de Contatos</span>
+                            </div>
+                            <!-- Contacts List -->
+                            <div id="phone-contacts-list"
+                                style="flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; background: #f1f2f6;">
+                                <!-- Contacts injected via JS -->
+                            </div>
+                        </div>
+
+                        <!-- App Inner View: Messages List -->
+                        <div id="phone-app-messages-list"
+                            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; border-radius: 0; flex-direction: column; color: black; z-index: 10; padding-top: 25px;">
+                            <div
+                                style="background: #e1b12c; color: white; padding: 15px 10px; display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                                <span style="flex-grow: 1; text-align: center;">Mensagens</span>
+                            </div>
+                            <!-- Messages Threads List -->
+                            <div id="phone-messages-threads-list"
+                                style="flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; background: #f1f2f6;">
+                                <!-- Threads injected via JS -->
+                            </div>
+                        </div>
+
+                        <!-- App Inner View: Active Chat -->
+                        <div id="phone-app-active-chat"
+                            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #e5ddd5; border-radius: 0; flex-direction: column; color: black; z-index: 15; padding-top: 25px;">
+                            <!-- Header -->
+                            <div id="phone-active-chat-header"
+                                style="background: #2ecc71; color: white; padding: 10px; display: flex; flex-direction:column; align-items: center; justify-content:center; gap: 5px; font-weight: bold; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 50px;">
+                                <span id="phone-active-chat-name"
+                                    style="text-align: center; font-size: 1.1rem; width:100%;">Nome</span>
+                                <div id="phone-active-chat-friendship-container"
+                                    style="font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; display:inline-block;">
+                                    💞 <span id="phone-active-chat-friendship">0%</span>
+                                </div>
+                            </div>
+                            <!-- Chat History -->
+                            <div id="phone-active-chat-history"
+                                style="flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Bubbles injected via JS -->
+                            </div>
+                            <!-- Chat Options -->
+                            <div id="phone-active-chat-options"
+                                style="background: #f8f9fa; padding: 10px; border-top: 1px solid #ddd; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; z-index:2;">
+                                <!-- Options injected via JS -->
+                            </div>
+                        </div>
+                    </div> <!-- End Inner Screen -->
+
+                    <button id="btn-close-smartphone"
+                        style="background: #333; color: white; border: none; padding: 5px; border-radius: 20px; cursor: pointer; font-weight: bold; width: 40%; align-self: center; height: 30px;">Desligar</button>
+                </div>
+            </div>
+            <!-- Modal Computer OS -->
+            <div id="modal-computer" class="modal-overlay"
+                style="display: none; position: absolute; z-index: 100; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+                <div
+                    style="background: #dfe6e9; padding: 0; border-radius: 10px; width: 80%; max-width: 800px; height: 500px; text-align: center; color: black; border: 8px solid #b2bec3; display: flex; flex-direction: column; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+
+                    <!-- OS Window Header -->
+                    <div
+                        style="background: #2d3436; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold; font-size: 1.1rem;">💻 MeuPC OS v1.0</span>
+                        <button id="btn-close-computer"
+                            style="background: #d63031; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; font-weight: bold; cursor: pointer; line-height: 1;">X</button>
+                    </div>
+
+                    <!-- Desktop Area -->
+                    <div
+                        style="flex-grow: 1; background: url('https://www.transparenttextures.com/patterns/cubes.png') #74b9ff; display: flex; padding: 20px; flex-wrap: wrap; gap: 20px; align-content: flex-start; position: relative;">
+                        <!-- Desktop Icons (Same logic as phone) -->
+                        <div class="app-icon" data-app="messages"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;">
+                                💬
+                                <!-- Unread Badge Placeholder -->
+                                <div id="pc-msg-badge"
+                                    style="display: none; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: red; border-radius: 50%; border: 2px solid white;">
+                                </div>
+                            </div>
+                            <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">Mensagens</span>
+                        </div>
+                        <div class="app-icon" data-app="contacts"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                📞</div>
+                            <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">Contatos</span>
+                        </div>
+                        <div class="app-icon" data-app="taxi"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                🚕</div>
+                            <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">Táxi</span>
+                        </div>
+                        <div class="app-icon" data-app="ifood"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                🍔</div>
+                            <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">iFood</span>
+                        </div>
+                        <div class="app-icon" data-app="ereader"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                📚</div>
+                            <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">E-Reader</span>
+                        </div>
+                        <div class="app-icon" data-app="store"
+                            style="display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 80px;">
+                            <div
+                                style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                👕</div>
+                            <span <span
+                                style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">Loja
+                                Roupa</span>
+                        </div>
+
+                        <!-- Computer App View: Messages Window -->
+                        <div id="pc-app-messages"
+                            style="display: none; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border-radius: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden; z-index: 20;">
+                            <!-- Window Header -->
+                            <div
+                                style="background: #e0e0e0; border-bottom: 1px solid #ccc; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: bold; color: #333;">💬 Mensageiro / Missões</span>
+                                <button id="btn-close-pc-messages"
+                                    style="background: #ff7675; border: none; color: white; width: 20px; height: 20px; border-radius: 3px; cursor: pointer; font-weight: bold; line-height: 1;">X</button>
+                            </div>
+                            <!-- Chat Area -->
+                            <div id="pc-chat-area"
+                                style="flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f5f6fa; font-family: 'Segoe UI', Tahoma, Arial, sans-serif;">
+                                <!-- Bubbles injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- FECHA O MODAL-COMPUTER AQUI! -->
+
+            <!-- Modal NPC Interaction (Smartwatch Circular Menu) -->
+            <div id="modal-npc-dialogue"
+                style="display: none; position: absolute; z-index: 100; flex-direction: column; align-items: center; justify-content: space-between; width: 120px; height: 120px; border-radius: 50%; background: rgba(20,20,20,0.95); border: 2px solid #444; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8); pointer-events: auto;">
+
+                <!-- Tiny Friendship / Info Node (Top Arc) -->
+                <div style="width: 100%; text-align: center; margin-top: 10px; z-index: 10; flex-shrink: 0;">
+                    <div id="npc-dialogue-name"
+                        style="margin: 0; font-size: 10px; color: #fff; font-family: 'Patrick Hand', cursive; font-weight: bold; text-shadow: 1px 1px 2px #000;">
+                        Nome</div>
+                    <div
+                        style="width: 40px; height: 3px; background: #333; border-radius: 2px; overflow: hidden; margin: 2px auto 0 auto; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);">
+                        <div id="npc-friendship-bar"
+                            style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9ff3, #feca57); transition: width 0.3s ease;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrolling Menu (Center area) -->
+                <div
+                    style="flex-grow: 1; width: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 5px;">
+                    <ul id="npc-dialogue-options"
+                        style="list-style: none; padding: 0; margin: 0; position: absolute; width: 100%; display: flex; flex-direction: column; align-items: center; transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); top: 50%;">
+                        <!-- Li items injected via JS -->
+                    </ul>
+                </div>
+
+                <!-- Text Label / Prompt (Bottom Arc) -->
+                <p id="npc-dialogue-prompt"
+                    style="font-size: 9px; font-weight: bold; font-family: 'Patrick Hand', cursive; color: #aaa; text-align: center; margin-bottom: 10px; z-index: 10; flex-shrink: 0; padding: 0 5px;">
+                    O que quer falar?</p>
+            </div>
+
+            <!-- Modal Mentor Message (Story popups) -->
+            <div id="modal-mentor-message" class="modal-overlay"
+                style="display: none; position: absolute; z-index: 150; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
+                <div
+                    style="background: #fff; padding: 0; border-radius: 12px; width: 85%; max-width: 350px; text-align: left; color: #333; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                    <div
+                        style="background: #eccc68; padding: 15px; border-bottom: 2px solid #f1c40f; align-items: center; display: flex; gap: 10px;">
+                        <div
+                            style="width: 40px; height: 40px; border-radius: 50%; background: #2f3542; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            👴🏽</div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #2f3542;">Mentor</h3>
+                            <span style="font-size: 0.8rem; color: #57606f;">Mensagem Nova</span>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p id="mentor-message-text" style="margin-top: 0; line-height: 1.4; font-size: 0.95rem;"></p>
+                    </div>
+                    <div style="padding: 15px; background: #f1f2f6; text-align: center; border-top: 1px solid #dfe4ea;">
+                        <button id="btn-close-mentor"
+                            style="background: #2ed573; color: white; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; box-shadow: 0 4px 6px rgba(46, 213, 115, 0.3);">Entendi!</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Perfil (Profile) -->
+            <div id="modal-profile" class="modal-overlay"
+                style="display: none; position: absolute; z-index: 100; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+                <div
+                    style="background: white; padding: 20px; border-radius: 10px; width: 80%; max-width: 400px; text-align: center; color: black; font-family: 'Patrick Hand', cursive;">
+                    <h2 id="profile-name" style="margin-top: 0; border-bottom: 2px dashed #ccc; padding-bottom: 10px;">
+                        Meu Perfil</h2>
+
+                    <h3 style="margin-top: 15px; text-decoration: underline;">Atributos</h3>
+                    <ul
+                        style="list-style: none; padding: 0; margin: 0; text-align: left; background: #f9f9f9; border: 1px solid #eee; border-radius: 5px; padding: 10px;">
+                        <li>Beleza: <span id="profile-beauty" style="font-weight: bold; float: right;">0</span>
+                        </li>
+                        <li>Inteligência: <span id="profile-intelligence"
+                                style="font-weight: bold; float: right;">0</span></li>
+                        <li>Carisma: <span id="profile-charisma" style="font-weight: bold; float: right;">0</span>
+                        </li>
+                        <li>Físico: <span id="profile-fitness" style="font-weight: bold; float: right;">0</span>
+                        </li>
+                    </ul>
+
+                    <h3 style="margin-top: 15px; text-decoration: underline;">Missão Atual</h3>
+                    <div id="profile-quests"
+                        style="display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; margin-bottom: 20px; font-size: 0.9rem; text-align: left; background: #fff8e7; padding: 15px; border-radius: 8px; border: 2px dashed #e1b12c;">
+                        <!-- Quests Injected via JS -->
+                    </div>
+
+                    <h3 style="margin-top: 15px; text-decoration: underline;">Meus Interesses</h3>
+                    <div id="profile-interests"
+                        style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 20px;">
+                        <!-- Injected via JS -->
+                    </div>
+
+                    <div style="display: flex; justify-content: center; gap: 10px;">
+                        <button id="btn-save-game"
+                            style="background:#0984e3;color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-weight:bold;font-size:1.1rem;">Salvar
+                            Jogo</button>
+                        <button id="btn-close-profile"
+                            style="background:#ff7675;color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-weight:bold;font-size:1.1rem;">Fechar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu de Emojis do Jogo -->
+            <div id="game-face-menu"
+                style="display: none; position: absolute; left: 20px; top: 20px; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 50%; z-index: 10; text-align: center; width: 100px; height: 100px; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.5);">
+                <div class="game-face-controls"
+                    style="display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; width: 100%;">
+                    <!-- Botões preenchidos pelo JS -->
+                    <button class="btn-game-face btn-secondary active-face" data-face="static"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">😐</button>
+                    <button class="btn-game-face btn-secondary" data-face="smile"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">😀</button>
+                    <button class="btn-game-face btn-secondary" data-face="angry"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">😠</button>
+                    <button class="btn-game-face btn-secondary" data-face="kissing"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">😘</button>
+                    <button class="btn-game-face btn-secondary" data-face="sad"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">😢</button>
+                    <button class="btn-game-face btn-secondary" data-face="boring"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">🙄</button>
+                    <button class="btn-game-face btn-secondary" data-face="tired"
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">🥱</button>
+                </div>
+                <div style="color: #ccc; font-size: 8px; margin-top: 3px;"><strong>'O'</strong></div>
+            </div>
+
+            <!-- Menu de Interação de Porta do Jogo -->
+            <div id="door-interaction-menu"
+                style="display: none; position: absolute; background: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; z-index: 10; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                <button id="btn-door-go" class="btn-secondary"
+                    style="font-size: 10px; padding: 2px 6px; font-weight: bold;">Ir (Enter)</button>
+            </div>
+
+            <div id="game-instructions"
+                style="position: fixed; bottom: 10px; width: 100%; text-align: center; color: white; margin-top: 10px; z-index: 50; text-shadow: 1px 1px 2px black;">
+                Use W, A, S, D ou as Setas para mover. Pressione <strong>O</strong> para usar emojis.
+            </div>
+
+            <!-- Modals for Store and Wardrobe -->
+            <div id="store-modal"
+                style="display: none; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; flex-direction: column;">
+                <div
+                    style="padding: 15px; border-bottom: 2px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #667eea; color: white; border-radius: 12px 12px 0 0;">
+                    <h2 style="margin: 0; font-size: 20px;">🛍️ Loja de Roupas</h2>
+                    <div style="font-weight: bold;">Seu Saldo: <span id="store-money-display">$0</span></div>
+                    <button class="btn-close-modal" id="btn-close-store"
+                        style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+                <div id="store-items-container"
+                    style="padding: 15px; overflow-y: auto; flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; background: #f5f5f5;">
+                    <!-- JS vai preencher os itens da loja aqui -->
+                </div>
+            </div>
+
+            <div id="wardrobe-modal"
+                style="display: none; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; flex-direction: column;">
+                <div
+                    style="padding: 15px; border-bottom: 2px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #8b4513; color: white; border-radius: 12px 12px 0 0;">
+                    <h2 style="margin: 0; font-size: 20px;">👔 Guarda-Roupas</h2>
+                    <div style="font-size: 14px;">Suas Peças Compradas</div>
+                    <button class="btn-close-modal" id="btn-close-wardrobe"
+                        style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+                <div id="wardrobe-items-container"
+                    style="padding: 15px; overflow-y: auto; flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; background: #fafafa;">
+                    <!-- JS vai preencher as roupas do jogador aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Old script might interfere, so we use game.js -->
+    <script src="js/playableGame.js"></script>
+    <script src="js/game.js"></script>
+</body>
+
+</html>

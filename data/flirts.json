@@ -1,0 +1,152 @@
+{
+    "compliment": {
+        "desc": "Dar elogio",
+        "reqFriendship": 50,
+        "highChance": 0.9,
+        "lowChance": 0.4,
+        "gain": 10,
+        "penalty": -5,
+        "player": [
+            "Você tá super bem hoje! 🔥"
+        ],
+        "positive": [
+            "Nossa, obrigado(a) hihi (+10 Amizade) 🌸"
+        ],
+        "negative": [
+            "Que vergonha... (-5 Amizade) 💧"
+        ],
+        "successFace": "smile",
+        "failFace": "boring"
+    },
+    "hug": {
+        "desc": "Dar abraço",
+        "reqFriendship": 60,
+        "highChance": 0.8,
+        "lowChance": 0.2,
+        "gain": 15,
+        "penalty": -10,
+        "player": [
+            "Me dá um abraço? 🤗"
+        ],
+        "positive": [
+            "Que abraço gostoso! (+15 Amizade) 🤗"
+        ],
+        "negative": [
+            "Que isso, encostando assim? (-10 Amizade) 🚫"
+        ],
+        "successFace": "smile",
+        "failFace": "angry"
+    },
+    "kiss": {
+        "desc": "Tentar beijar",
+        "reqFriendship": 80,
+        "highChance": 0.9,
+        "lowChance": 0.05,
+        "gain": 30,
+        "penalty": -20,
+        "player": [
+            "Sabe o que eu queria agora? Um beijo seu... 😘"
+        ],
+        "positive": [
+            "O PRIMEIRO BEIJO! Foi mágico!! (+30 Amizade) 💋"
+        ],
+        "negative": [
+            "Sai pra lá apressadão! (-20 Amizade) 💀"
+        ],
+        "successFace": "kissing",
+        "failFace": "angry",
+        "isKiss": true
+    },
+    "elogio": {
+        "desc": "🥰 Elogio sincero",
+        "reqFriendship": 50,
+        "highChance": 0.9,
+        "lowChance": 0.4,
+        "gain": 10,
+        "penalty": -5,
+        "player": [
+            "Seu olhar é maravilhoso, sabia? 😊",
+            "Sua vibe é simplesmente a melhor de todas! ✨",
+            "Adorei sua roupa hoje, super estilosa! 👕"
+        ],
+        "positive": [
+            "Você acha mesmo? Muito obrigada! (+10 Amizade) 🌸",
+            "Que gentil... fico até sem graça! (+10 Amizade) 🌸",
+            "Valeu! Montei o visual com carinho hoje! (+10 Amizade) 🌸"
+        ],
+        "negative": [
+            "Acho que você tá exagerando... (-5 Amizade) 💧",
+            "Hum, tá bom, obrigado(a). (-5 Amizade) 💧",
+            "Não achei nada demais, mas ok. (-5 Amizade) 💧"
+        ],
+        "successFace": "smile",
+        "failFace": "boring"
+    },
+    "brincadeira": {
+        "desc": "😜 Brincadeira leve",
+        "reqFriendship": 55,
+        "highChance": 0.85,
+        "lowChance": 0.3,
+        "gain": 12,
+        "penalty": -8,
+        "player": [
+            "Sabia que você fica bem fofo(a) quando tá com essa cara de sério(a)? 😂",
+            "Mandei uma foto sua pro meu cachorro e ele abanou o rabo, acho que ele te aprovou! 🐶"
+        ],
+        "positive": [
+            "Hahaha, que bobo(a)! Mas valeu pelo elogio torto. (+12 Amizade) 😆",
+            "Kkkk pelo menos o seu cachorro tem bom gosto! (+12 Amizade) 😆"
+        ],
+        "negative": [
+            "Sério? Não vi graça nesse comentário. (-8 Amizade) 🚫",
+            "Sério que você usou um cachorro pra dar em cima de mim? (-8 Amizade) 🚫"
+        ],
+        "successFace": "smile",
+        "failFace": "angry"
+    },
+    "romantico": {
+        "desc": "🌹 Fala romântica",
+        "reqFriendship": 70,
+        "highChance": 0.85,
+        "lowChance": 0.15,
+        "gain": 20,
+        "penalty": -15,
+        "player": [
+            "Não consigo parar de pensar em você... ❤️",
+            "Sempre que meu celular toca, fico torcendo pra ser mensagem sua. 🥰"
+        ],
+        "positive": [
+            "Aww... eu também penso bastante em você. (+20 Amizade) 🥰",
+            "Sério? Eu também adoro receber suas mensagens. (+20 Amizade) 🥰"
+        ],
+        "negative": [
+            "Acho melhor a gente não confundir as coisas agora... (-15 Amizade) 😬",
+            "Ah, desculpa, mas eu não sinto bem o mesmo pra isso... (-15 Amizade) 😬"
+        ],
+        "successFace": "kissing",
+        "failFace": "sad"
+    },
+    "ousado": {
+        "desc": "🔥 Cantada ousada",
+        "reqFriendship": 80,
+        "highChance": 0.9,
+        "lowChance": 0.05,
+        "gain": 30,
+        "penalty": -25,
+        "player": [
+            "Eu devia cobrar aluguel, porque você não sai da minha cabeça o dia todo. 🔥",
+            "Tá afim de deixar as conversas de lado e ver no que dá a gente? 😉"
+        ],
+        "positive": [
+            "Essa foi direto ao ponto haha! Gostei. (+30 Amizade) 🔥",
+            "Talvez eu esteja querendo a mesma coisa faz tempo... (+30 Amizade) 💋"
+        ],
+        "negative": [
+            "Nossa, que desespero. Muito pra frente pro meu gosto. (-25 Amizade) 💀",
+            "Eita, vai com calma, a gente mal se fala direito ainda. (-25 Amizade) 💀"
+        ],
+        "successFace": "kissing",
+        "failFace": "angry",
+        "isKiss": true
+    }
+}

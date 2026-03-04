@@ -1,0 +1,172 @@
+{
+    "missions": [
+        {
+            "id": "m00_chegando_na_cidade",
+            "title": "A Selva de Pedra",
+            "trigger": {
+                "type": "game_start"
+            },
+            "mentor_message": "Finalmente você chegou! A viagem foi longa, né? Pega suas malas e tenta achar a porta do prédio onde a gente alugou aquele quartinho pra você. Não vai se perder na rua!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "go_to_location",
+                    "target": "apartment",
+                    "description": "Encontre e entre no seu apartamento pela rua."
+                }
+            ],
+            "rewards": {
+                "popularity": 2
+            }
+        },
+        {
+            "id": "m01_chegada",
+            "title": "Poeira da Estrada",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m00_chegando_na_cidade"
+            },
+            "mentor_message": "Aí, achou o lugar! O apê é minúsculo, mas pelo menos não tem assombração igual naquelas histórias que a gente contava na calçada. Vai tirar essa poeira da estrada, toma um banho e testa esse colchão aí.",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "interact_object",
+                    "target": "bathroom_shower",
+                    "description": "Tome um banho para recuperar sua barra de Higiene."
+                },
+                {
+                    "id": "t2",
+                    "type": "interact_object",
+                    "target": "bedroom_bed",
+                    "description": "Durma um pouco para recuperar Energia."
+                }
+            ],
+            "rewards": {
+                "energy": 100,
+                "hygiene": 100
+            }
+        },
+        {
+            "id": "m02_fome_e_realidade",
+            "title": "Aqui Ninguém Dá Pão",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m01_chegada"
+            },
+            "mentor_message": "Dormiu bem? Seguinte, aqui na cidade grande o povo não tem o costume de dar um prato de comida pra quem bate na porta não. Abre a geladeira e vê se tem algo, senão vai ter que gastar os trocados da passagem na mercearia da esquina. Não vai desmaiar de fome no primeiro dia!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "interact_object",
+                    "target": "kitchen_fridge",
+                    "description": "Verifique a geladeira no seu apartamento."
+                },
+                {
+                    "id": "t2",
+                    "type": "stat_reach",
+                    "target": "hunger",
+                    "value": 80,
+                    "description": "Coma algo para deixar sua fome acima de 80%."
+                }
+            ],
+            "rewards": {
+                "money": 0
+            }
+        },
+        {
+            "id": "m03_a_busca_pelo_emprego",
+            "title": "Correndo Atrás do Prejuízo",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m02_fome_e_realidade"
+            },
+            "mentor_message": "Ó, esqueci de um detalhe importantíssimo: o dono do prédio é brabo e o aluguel vence toda sexta-feira sem choro. Dá um pulo na Lanchonete do centro. O gerente de lá, o Seu Zé, tá precisando de um ajudante. Puxa um papo com ele primeiro, ganha a confiança do homem e depois pede a vaga.",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "go_to_location",
+                    "target": "downtown_diner",
+                    "description": "Vá até a Lanchonete no centro da cidade."
+                },
+                {
+                    "id": "t2",
+                    "type": "npc_relationship",
+                    "target": "npc_ze",
+                    "value": 30,
+                    "description": "Converse com o Seu Zé até atingir 30% de amizade."
+                },
+                {
+                    "id": "t3",
+                    "type": "dialogue_choice",
+                    "target": "ask_for_job",
+                    "description": "Escolha a opção de diálogo para pedir o emprego."
+                }
+            ],
+            "rewards": {
+                "unlock_job": "dishwasher"
+            }
+        },
+        {
+            "id": "m04_suor_e_lagrimas",
+            "title": "O Primeiro Salário",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m03_a_busca_pelo_emprego"
+            },
+            "mentor_message": "Boa! Lavar prato e limpar mesa não é o glamour que você sonhava, mas paga as contas. Faz o teu primeiro turno lá e tenta juntar pelo menos uns R$ 200 pra garantir a semana do aluguel. Mostra que o povo da nossa terra tem garra pra trabalhar!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "work_shift",
+                    "target": "job_dishwasher",
+                    "value": 1,
+                    "description": "Cumpra pelo menos um turno completo de trabalho na lanchonete."
+                },
+                {
+                    "id": "t2",
+                    "type": "stat_reach",
+                    "target": "money",
+                    "value": 200,
+                    "description": "Acumule R$ 200 na sua carteira."
+                }
+            ],
+            "rewards": {
+                "popularity": 5,
+                "unlock_location": "clothing_store"
+            }
+        },
+        {
+            "id": "m05_banho_de_loja",
+            "title": "Deixando o Passado pra Trás",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m04_suor_e_lagrimas"
+            },
+            "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festinha aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "go_to_location",
+                    "target": "clothing_store",
+                    "description": "Vá até a Loja de Roupas."
+                },
+                {
+                    "id": "t2",
+                    "type": "buy_item",
+                    "target": "item_category_shirt",
+                    "description": "Compre e equipe qualquer camisa nova."
+                },
+                {
+                    "id": "t3",
+                    "type": "go_to_location",
+                    "target": "neighborhood_party",
+                    "description": "Vá até o local da festa à noite."
+                }
+            ],
+            "rewards": {
+                "popularity": 20,
+                "unlock_location": "neighborhood_party"
+            }
+        }
+    ]
+}
