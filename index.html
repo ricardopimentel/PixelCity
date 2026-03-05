@@ -140,70 +140,82 @@
         <!-- Tela de Atributos e Interesses -->
         <div id="attributes-screen" class="screen">
             <div class="char-controls-container">
-                <h2>Sua Personalidade</h2>
-                <p>Distribua <span id="points-remaining"
-                        style="font-weight: bold; color: var(--accent-color);">10</span> pontos iniciais:</p>
+                <div class="char-creation-layout">
+                    <!-- Left Column: Stats & Interests -->
+                    <div class="char-stats-col">
+                        <h2>Sua Personalidade</h2>
+                        <p>Distribua <span id="points-remaining"
+                                style="font-weight: bold; color: var(--accent-color);">10</span> pontos iniciais:</p>
 
-                <div class="control-group">
-                    <!-- Beleza -->
-                    <div class="control-row attribute-row">
-                        <label>Beleza:</label>
-                        <div class="attribute-controls">
-                            <button class="arrow-btn btn-attr-minus" data-attr="beauty">-</button>
-                            <span id="attr-beauty" class="style-display">0</span>
-                            <button class="arrow-btn btn-attr-plus" data-attr="beauty">+</button>
+                        <div class="control-group attribute-compact">
+                            <!-- Beleza -->
+                            <div class="control-row attribute-row">
+                                <label>Beleza:</label>
+                                <div class="attribute-controls">
+                                    <button class="arrow-btn btn-attr-minus" data-attr="beauty">-</button>
+                                    <span id="attr-beauty" class="style-display">0</span>
+                                    <button class="arrow-btn btn-attr-plus" data-attr="beauty">+</button>
+                                </div>
+                            </div>
+                            <!-- Inteligência -->
+                            <div class="control-row attribute-row">
+                                <label>Inteligência:</label>
+                                <div class="attribute-controls">
+                                    <button class="arrow-btn btn-attr-minus" data-attr="intelligence">-</button>
+                                    <span id="attr-intelligence" class="style-display">0</span>
+                                    <button class="arrow-btn btn-attr-plus" data-attr="intelligence">+</button>
+                                </div>
+                            </div>
+                            <!-- Carisma -->
+                            <div class="control-row attribute-row">
+                                <label>Carisma:</label>
+                                <div class="attribute-controls">
+                                    <button class="arrow-btn btn-attr-minus" data-attr="charisma">-</button>
+                                    <span id="attr-charisma" class="style-display">0</span>
+                                    <button class="arrow-btn btn-attr-plus" data-attr="charisma">+</button>
+                                </div>
+                            </div>
+                            <!-- Físico -->
+                            <div class="control-row attribute-row">
+                                <label>Físico:</label>
+                                <div class="attribute-controls">
+                                    <button class="arrow-btn btn-attr-minus" data-attr="fitness">-</button>
+                                    <span id="attr-fitness" class="style-display">0</span>
+                                    <button class="arrow-btn btn-attr-plus" data-attr="fitness">+</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <!-- Inteligência -->
-                    <div class="control-row attribute-row">
-                        <label>Inteligência:</label>
-                        <div class="attribute-controls">
-                            <button class="arrow-btn btn-attr-minus" data-attr="intelligence">-</button>
-                            <span id="attr-intelligence" class="style-display">0</span>
-                            <button class="arrow-btn btn-attr-plus" data-attr="intelligence">+</button>
-                        </div>
-                    </div>
-                    <!-- Carisma -->
-                    <div class="control-row attribute-row">
-                        <label>Carisma:</label>
-                        <div class="attribute-controls">
-                            <button class="arrow-btn btn-attr-minus" data-attr="charisma">-</button>
-                            <span id="attr-charisma" class="style-display">0</span>
-                            <button class="arrow-btn btn-attr-plus" data-attr="charisma">+</button>
-                        </div>
-                    </div>
-                    <!-- Físico -->
-                    <div class="control-row attribute-row">
-                        <label>Físico:</label>
-                        <div class="attribute-controls">
-                            <button class="arrow-btn btn-attr-minus" data-attr="fitness">-</button>
-                            <span id="attr-fitness" class="style-display">0</span>
-                            <button class="arrow-btn btn-attr-plus" data-attr="fitness">+</button>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="control-group">
-                    <h3>Interesses</h3>
-                    <p style="font-size: 0.9em; margin-top: -5px;">Selecione o que você gosta:</p>
-                    <div id="interests-grid" class="interests-grid">
-                        <button class="interest-btn" data-interest="pets">🐶 Pets</button>
-                        <button class="interest-btn" data-interest="cars">🏎️ Carros</button>
-                        <button class="interest-btn" data-interest="humor">😂 Humor</button>
-                        <button class="interest-btn" data-interest="movies">🎬 Filmes</button>
-                        <button class="interest-btn" data-interest="sports">⚽ Esportes</button>
-                        <button class="interest-btn" data-interest="music">🎵 Música</button>
-                        <button class="interest-btn" data-interest="art">🎨 Arte</button>
-                        <button class="interest-btn" data-interest="cooking">🍳 Culinária</button>
-                        <button class="interest-btn" data-interest="gaming">🎮 Jogos</button>
-                        <button class="interest-btn" data-interest="books">📚 Livros</button>
-                        <button class="interest-btn" data-interest="tech">💻 Tecnologia</button>
-                        <button class="interest-btn" data-interest="travel">✈️ Viagens</button>
+                        <div class="control-group">
+                            <h3>Interesses</h3>
+                            <p style="font-size: 0.8em; margin-top: -5px;">Selecione 3 afinidades:</p>
+                            <div id="interests-grid" class="interests-grid compact-grid">
+                                <button class="interest-btn" data-interest="pets">🐶 Pets</button>
+                                <button class="interest-btn" data-interest="cars">🏎️ Carros</button>
+                                <button class="interest-btn" data-interest="humor">😂 Humor</button>
+                                <button class="interest-btn" data-interest="movies">🎬 Filmes</button>
+                                <button class="interest-btn" data-interest="sports">⚽ Esportes</button>
+                                <button class="interest-btn" data-interest="music">🎵 Música</button>
+                                <button class="interest-btn" data-interest="art">🎨 Arte</button>
+                                <button class="interest-btn" data-interest="cooking">🍳 Culinária</button>
+                                <button class="interest-btn" data-interest="gaming">🎮 Jogos</button>
+                                <button class="interest-btn" data-interest="books">📚 Livros</button>
+                                <button class="interest-btn" data-interest="tech">💻 Tecnologia</button>
+                                <button class="interest-btn" data-interest="travel">✈️ Viagens</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="screen-footer">
-                    <button id="btn-start-life" class="btn-primary">Começar a Viver</button>
+                    <!-- Right Column: Introduction & Start Button -->
+                    <div class="char-intro-col">
+                        <div class="intro-text-wrapper">
+                            <h3>Bem-vindo!</h3>
+                            <div id="game-intro-content">Carregando introdução...</div>
+                        </div>
+                        <div class="intro-footer">
+                            <button id="btn-start-life" class="btn-primary">Começar a Viver</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

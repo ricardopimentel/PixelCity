@@ -740,3 +740,68 @@ select {
     white-space: nowrap;
     margin-left: 10px;
 }
+
+/* Character Creation Two-Column Layout */
+.char-creation-layout {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    min-height: 400px;
+}
+
+.char-stats-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-right: 1px solid var(--glass-border);
+    padding-right: 20px;
+}
+
+.char-intro-col {
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.intro-text-wrapper {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #fff;
+    border: 1px solid var(--glass-border);
+    flex-grow: 1;
+}
+
+.intro-text-wrapper h3 {
+    margin: 0 0 10px 0;
+    color: var(--primary-cyan);
+    font-size: 1.1rem;
+}
+
+.intro-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.attribute-compact .control-row {
+    margin-bottom: 4px;
+}
+
+.attribute-compact .attribute-controls {
+    gap: 5px;
+}
+
+.compact-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 5px;
+}
+
+.compact-grid .interest-btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+}

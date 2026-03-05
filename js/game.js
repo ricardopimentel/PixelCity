@@ -124,8 +124,22 @@ class CharacterCreator {
         console.log("Initializing Character Creator...");
         await this.loadEmojis();
         await this.loadAssets();
+        await this.loadQuests(); // Load quests for introduction
         this.initUI();
         this.startPreviewLoop();
+    }
+
+    async loadQuests() {
+        try {
+            const response = await fetch('data/quests.json');
+            const data = await response.json();
+            const introEl = document.getElementById('game-intro-content');
+            if (introEl && data.introduction) {
+                introEl.innerText = data.introduction;
+            }
+        } catch (error) {
+            console.error("Failed to load quests for intro:", error);
+        }
     }
 
     async loadEmojis() {
@@ -439,49 +453,46 @@ class CharacterCreator {
 
         if (this.cache[key]) return this.cache[key];
 
-        // Create new tinted image
+        // OPTIMIZATION: Downscale original high-res assets (816px per frame) to a more 
+        // manageable size (240px per frame) while keeping 2x resolution for sharpness.
+        // Original: 1312x3264 -> Target: 384x960 (approx)
+        const targetFrameHeight = 240;
+        const originalFrameHeight = img.height / 4;
+        const scale = targetFrameHeight / originalFrameHeight;
+
+        const targetWidth = Math.ceil(img.width * scale);
+        const targetHeight = Math.ceil(img.height * scale);
+
+        // Create new tinted and downscaled image
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
 
-        // Step 1: Draw the original image (The shape)
-        ctx.drawImage(img, 0, 0);
+        // Disable smoothing for pixel-art feel if needed, but here we are downscaling large assets
+        ctx.imageSmoothingEnabled = true;
 
-        // Step 2: Tinting using Composite Operations (Safe for local files!)
-        // 'source-in' : The new shape is drawn only where both the new shape and the destination canvas overlap.
-        // Everything else is made transparent.
+        // Step 1: Draw the original image downscaled
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-        // We need to preserve the alpha channel carefully.
-
-        // Method:
-        // 1. Draw image (already done).
-        // 2. Set globalCompositeOperation to 'source-in'.
-        // 3. Fill with color. Implementation: This replaces the image content with the flat color, keeping the alpha.
-        // 4. Reset globalCompositeOperation.
-        // 5. Draw the original image again on top with 'multiply' to keep shading?
-        //    OR: If the original image is grayscale, we want to multiply color onto it.
-
-        // Let's try 'multiply' approach for shading preservation (better for clothing folds)
-
-        // 1. Draw Image
-        // 2. Set globalCompositeOperation = 'multiply'
-        // 3. Fill Rect with Color
-        // 4. Set globalCompositeOperation = 'destination-in'
-        // 5. Draw Image again (to mask the colored rect to the image shape)
-
+        // Step 2: Tinting using Composite Operations
         ctx.globalCompositeOperation = 'multiply';
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.globalCompositeOperation = 'destination-in';
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         // Reset
         ctx.globalCompositeOperation = 'source-over';
 
-        // Check if cache key exists before assigning? JS objects handle it.
         this.cache[key] = canvas;
+
+        // Console memory tracking (optional log to see optimization in action)
+        if (Object.keys(this.cache).length % 20 === 0) {
+            console.log(`Sprite Cache: ${Object.keys(this.cache).length} items. Approx RAM: ${(Object.keys(this.cache).length * targetWidth * targetHeight * 4 / 1024 / 1024).toFixed(2)} MB`);
+        }
+
         return canvas;
     }
 

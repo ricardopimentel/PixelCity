@@ -51,6 +51,7 @@ class PlayableGame {
         this.nearDoor = null;
         this.currentRoom = 'street'; // Rooms: bedroom, livingroom, bathroom, kitchen, street
         this.npcs = []; // Array to hold NPC data
+        this.npcsSpawned = false;
 
         // Life Sim Stats
         this.stats = { time: 8 * 60, hunger: 100, hygiene: 100, health: 100, money: 500, bladder: 100 };
@@ -65,6 +66,23 @@ class PlayableGame {
         // Camera System
         this.camera = { x: 0, y: 0 };
         this.mapBounds = { width: 800, height: 600 }; // Default bounds, update per room
+
+        // --- CUTSCENE & BUS ---
+        this.bus = {
+            x: 0,
+            y: 0,
+            speed: 5,
+            image: null,
+            visible: false
+        };
+        this.cutscene = {
+            active: false,
+            phase: 'none', // 'none', 'bus_arriving', 'character_dropped', 'bus_leaving'
+            timer: 0
+        };
+        this.loadBusAsset();
+        this.envAssets = {};
+        this.loadEnvironmentAssets();
 
         // Inventory System (Indices of owned items)
         this.inventory = {
@@ -1175,6 +1193,64 @@ class PlayableGame {
         this.updateStatsUI();
     }
 
+    // Stats update
+    updateStats(dt) {
+        // This method would contain logic to update player stats over time
+        // For example:
+        // this.stats.hunger = Math.max(0, this.stats.hunger - 0.1 * dt);
+        // this.stats.bladder = Math.max(0, this.stats.bladder - 0.05 * dt);
+        // this.stats.energy = Math.max(0, this.stats.energy - 0.02 * dt);
+        // this.updateStatsUI();
+    }
+
+    updateCutscene(dt) {
+        this.cutscene.timer += dt || 1;
+
+        if (this.cutscene.phase === 'bus_leaving') {
+            // Move da esquerda para a direita
+            this.bus.x += this.bus.speed;
+
+            // Quando o ônibus sai da tela (considerando o tamanho dele)
+            if (this.bus.x > this.player.x + 800) {
+                this.cutscene.active = false;
+                this.cutscene.phase = 'none';
+                this.bus.visible = false;
+                this.bus = null; // Delete from memory/stop updating
+                console.log("Cutscene finished: character revealed and bus removed.");
+
+                // Trigger first mission
+                this.checkMissionTrigger('game_start');
+            }
+        }
+
+        // Keep camera on player during cutscene
+        this.updateCamera();
+    }
+
+    updateCamera() {
+        // Update Camera Position (Follow player, but clamp to map bounds)
+        let camX = this.player.x - this.canvas.width / 2;
+        let camY = this.player.y - this.canvas.height / 2;
+
+        if (this.currentRoom === 'street') {
+            this.mapBounds.width = 2400;
+        } else {
+            this.mapBounds.width = 800;
+        }
+
+        if (this.canvas.width >= this.mapBounds.width) {
+            camX = -(this.canvas.width - this.mapBounds.width) / 2;
+        } else {
+            camX = Math.max(0, Math.min(camX, this.mapBounds.width - this.canvas.width));
+        }
+
+        // Vertical clamp
+        camY = Math.max(0, Math.min(camY, this.mapBounds.height - this.canvas.height));
+
+        this.camera.x = camX;
+        this.camera.y = camY;
+    }
+
     openMessagesApp() {
         // Mark all as read
         this.player.messages.forEach(msg => msg.read = true);
@@ -1266,6 +1342,11 @@ class PlayableGame {
 
             if (this.dialogueState && this.dialogueState.isPhone) {
                 this.dialogueState = null;
+            }
+
+            // Spawn NPCs if closing the first mission/intro phone
+            if (!this.npcsSpawned && !this.cutscene.active) {
+                this.spawnWorldNpcs();
             }
 
             // Clean up selections
@@ -2093,7 +2174,7 @@ class PlayableGame {
                         this.checkTasks('buy_item', 'item_category_shirt');
                         alert('Camisa comprada com sucesso!');
                     } else {
-                        alert('Dinheiro insuficiente para a camisa.');
+                        alert('Dinheiro insuficiente!');
                     }
                 }
             } else if (this.nearDoor === 'obj_party') {
@@ -2881,25 +2962,30 @@ class PlayableGame {
 
     async start(isLoaded = false) {
         if (!isLoaded) {
-            // Spawn no final da rua, para ter que caminhar até o apartamento
-            this.player.x = 2300; // Final da rua à direita expandida
-            this.player.y = 150; // Na calçada
-            this.player.direction = 0; // Olhando pra baixo
+            // Spawn no final da rua (na rua, não na calçada)
+            this.player.x = 2300;
+            this.player.y = 480; // Road height
+            this.player.direction = 2; // Olhando pra Direita
+            this.player.visible = true;
+
+            // Re-initialize bus object if it was deleted in previous session
+            if (!this.bus) {
+                this.bus = { x: 0, y: 0, speed: 5, image: null, visible: false };
+                this.loadBusAsset();
+            }
+
+            // Posiciona o ônibus EXATAMENTE sobre o jogador, mas com Y levemente maior para ficar na frente
+            this.bus.x = this.player.x;
+            this.bus.y = this.player.y + 10; // Levemente à frente para o depth search
+            this.bus.visible = true;
+            this.cutscene.active = true;
+            this.cutscene.phase = 'bus_leaving';
+            this.cutscene.timer = 0;
 
             await this.loadNpcData();
 
             this.npcs = [];
-
-            // Add fixed story NPCs
-            if (this.npcData && this.npcData.story_npcs) {
-                this.npcData.story_npcs.forEach(npc => {
-                    this.npcs.push(JSON.parse(JSON.stringify(npc))); // Deep copy
-                });
-            }
-
-            for (let i = 0; i < 6; i++) {
-                this.npcs.push(this.generateNPC(this.npcs));
-            }
+            this.npcsSpawned = false;
         } else {
             // Only load data if we didn't already
             if (!this.npcData) await this.loadNpcData();
@@ -3015,13 +3101,27 @@ class PlayableGame {
 
     initMissions() {
         if (!this.currentMissionId && this.completedMissions.length === 0) {
-            // Delay the first mission trigger slightly so the game canvas and DOM finish loading
+            // Se for um jogo novo, inicia a cutscene
             setTimeout(() => {
-                this.checkMissionTrigger('game_start');
+                this.startCutscene();
             }, 500);
         } else {
             this.updateQuestsUI(); // refresh UI for loaded state
         }
+    }
+
+    startCutscene() {
+        this.cutscene.active = true;
+        this.cutscene.phase = 'bus_leaving';
+        this.cutscene.timer = 0;
+
+        // O ônibus começa exatamente onde o player está (escondendo-o)
+        this.bus.x = this.player.x;
+        this.bus.y = this.player.y + 10; // Depth sorting trick
+        this.bus.visible = true;
+        this.bus.speed = 2; // Reduzido de 8 para um movimento mais suave e devagar
+
+        console.log("Cutscene started: Bus revealing character...");
     }
 
     startMission(missionId) {
@@ -3286,6 +3386,29 @@ class PlayableGame {
     }
 
 
+    spawnWorldNpcs() {
+        if (this.npcsSpawned) return;
+
+        console.log("Spawning NPCs for the first time...");
+
+        // Add fixed story NPCs
+        if (this.npcData && this.npcData.story_npcs) {
+            this.npcData.story_npcs.forEach(npc => {
+                // Certifica-se de que não foi carregado pelo save antes
+                if (!this.npcs.find(n => n.id === npc.id)) {
+                    this.npcs.push(JSON.parse(JSON.stringify(npc)));
+                }
+            });
+        }
+
+        // Add random NPCs
+        for (let i = 0; i < 6; i++) {
+            this.npcs.push(this.generateNPC(this.npcs));
+        }
+
+        this.npcsSpawned = true;
+    }
+
     generateNPC(existingNpcs = []) {
         const allInterests = ['pets', 'cars', 'humor', 'movies', 'sports', 'music', 'art', 'cooking', 'gaming', 'books', 'tech', 'travel'];
 
@@ -3319,19 +3442,25 @@ class PlayableGame {
         });
 
         // Smart Spawning logic to avoid Y overlapping
-        let py = 400 + Math.random() * 100;
+        // Road range is approx 350 to 600. Walkable pavement is above.
+        // User wants them in the road.
+        let py = 450 + Math.random() * 100;
         let dir = Math.random() > 0.5 ? 2 : 3;
-        let px = dir === 2 ? -50 - Math.random() * 100 : 2050 + Math.random() * 100;
+
+        // Ensure they spawn clearly OFF-SCREEN
+        // Screen width is 800. Let's use camera-relative or map extremes.
+        // If map is 2400, and camera is at player (2300), let's spawn at extremes.
+        let px = dir === 2 ? -200 - Math.random() * 200 : 2600 + Math.random() * 200;
 
         // Ensure new spawn doesn't land exactly on someone else's Y track
         if (existingNpcs && existingNpcs.length > 0) {
             let overlapping = true;
             let attempts = 0;
             while (overlapping && attempts < 10) {
-                overlapping = existingNpcs.some(n => Math.abs(n.y - py) < 30 && Math.abs(n.x - px) < 100);
+                overlapping = existingNpcs.some(n => Math.abs(n.y - py) < 30 && (Math.abs(n.x - px) < 150));
                 if (overlapping) {
-                    py = 400 + Math.random() * 100;
-                    px = dir === 2 ? -50 - Math.random() * 150 : 2050 + Math.random() * 150;
+                    py = 450 + Math.random() * 100;
+                    px = dir === 2 ? -200 - Math.random() * 300 : 2600 + Math.random() * 300;
                 }
                 attempts++;
             }
@@ -3433,6 +3562,11 @@ class PlayableGame {
     }
 
     update(dt) {
+        if (this.cutscene.active) {
+            this.updateCutscene(dt);
+            return;
+        }
+
         let dx = 0;
         let dy = 0;
 
@@ -3457,12 +3591,15 @@ class PlayableGame {
                 let hitboxes = this.getRoomHitboxes(this.currentRoom);
 
                 // Foot-based Collision boxes for NPCs in the CURRENT room
-                // This creates a physical barrier at the NPC's feet.
+                // OPTIMIZATION: Only collision check against nearby NPCs (within 500px)
                 if (this.npcs) {
                     this.npcs.forEach(npc => {
                         const npcRoom = npc.currentRoom || npc.initial_room || 'street';
                         if (npcRoom === this.currentRoom) {
-                            hitboxes.push({ x: npc.x - 20, y: npc.y - 10, w: 40, h: 20 });
+                            const distSq = Math.pow(npc.x - this.player.x, 2) + Math.pow(npc.y - this.player.y, 2);
+                            if (distSq < 250000) { // 500 * 500
+                                hitboxes.push({ x: npc.x - 20, y: npc.y - 10, w: 40, h: 20 });
+                            }
                         }
                     });
                 }
@@ -3568,6 +3705,12 @@ class PlayableGame {
             }
 
             this.player.animTimer -= (1000 / fps);
+        }
+
+        // Performance Monitoring (Logs every 300 frames)
+        this.perfCounter = (this.perfCounter || 0) + 1;
+        if (this.perfCounter % 300 === 0) {
+            console.log(`FPS approx: ${Math.round(1000 / dt)} | Entities: ${this.npcs.length + 1}`);
         }
 
         // Proximity detection for doors based on current room
@@ -3680,13 +3823,26 @@ class PlayableGame {
 
         // Update NPCs and proximity
         if (this.npcs) {
-            const currentRoomNpcs = this.npcs.filter(npc => (npc.currentRoom || npc.initial_room || 'street') === this.currentRoom);
-
             let closestNpc = null;
             let minDistance = 70; // Interaction radius (X axis)
 
-            // 1. Find the single closest NPC in the CURRENT room to prompt interaction
-            currentRoomNpcs.forEach(npc => {
+            this.npcs.forEach(npc => {
+                const npcRoom = npc.currentRoom || npc.initial_room || 'street';
+                if (npcRoom !== this.currentRoom) return;
+
+                // OPTIMIZATION: Skip heavy logic for NPCs way off-screen (in the street)
+                const distSq = Math.pow(npc.x - this.player.x, 2) + Math.pow(npc.y - this.player.y, 2);
+                const isVeryFar = distSq > 1000000; // 1000 * 1000
+
+                // If the player is in a small room, we don't skip logic unless performance is ultra-critical.
+                // In the street (2400px), we skip NPCs beyond 1000px.
+                if (this.currentRoom === 'street' && isVeryFar) {
+                    // Just update animation timer so they are ready when we return
+                    npc.animTimer += dt;
+                    if (npc.animTimer > 200) npc.animTimer = 0;
+                    return;
+                }
+
                 const yDiff = Math.abs(this.player.y - npc.y);
                 const xDiff = Math.abs(this.player.x - npc.x);
 
@@ -3696,8 +3852,16 @@ class PlayableGame {
                 }
             });
 
-            // 2. Handle all NPCs in the CURRENT room
-            currentRoomNpcs.forEach(npc => {
+            // 2. Handle all NPCs in the CURRENT room (Already handled above for closest calculation)
+            // But we need to handle movement and animation for everyone in room.
+            this.npcs.forEach(npc => {
+                const npcRoom = npc.currentRoom || npc.initial_room || 'street';
+                if (npcRoom !== this.currentRoom) return;
+
+                // Skip if very far (same optimization as above)
+                const distSq = Math.pow(npc.x - this.player.x, 2) + Math.pow(npc.y - this.player.y, 2);
+                if (this.currentRoom === 'street' && distSq > 1000000) return;
+
                 // Determine if this specific NPC is the one currently engaging the player
                 const isEngaged = (npc === closestNpc);
 
@@ -3791,14 +3955,19 @@ class PlayableGame {
 
                     // 3. Room Boundary Checks (Synced with Player Clamping)
                     // We use 50 instead of 24 for NPCs in rooms to keep them out of transition-door areas
-                    const minXLimit = isStreet ? -100 : 50;
-                    const maxXLimit = isStreet ? roomWidth + 100 : roomWidth - 50;
+                    const minXLimit = isStreet ? -300 : 50;
+                    const maxXLimit = isStreet ? roomWidth + 300 : roomWidth - 50;
 
                     if (npc.x + moveX < minXLimit) {
                         if (isStreet) {
-                            if (npc.x < -100) {
-                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) npc.x = roomWidth + 100;
-                                else Object.assign(npc, this.generateNPC(this.npcs));
+                            // Recycle street NCPs only when they are off-map AND off-camera
+                            const offCamera = (npc.x < this.camera.x - 150);
+                            if (offCamera) {
+                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) {
+                                    npc.x = roomWidth + 200; // Loop back
+                                } else {
+                                    Object.assign(npc, this.generateNPC(this.npcs));
+                                }
                             }
                         } else {
                             moveX = 0;
@@ -3806,9 +3975,14 @@ class PlayableGame {
                         }
                     } else if (npc.x + moveX > maxXLimit) {
                         if (isStreet) {
-                            if (npc.x > roomWidth + 100) {
-                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) npc.x = -100;
-                                else Object.assign(npc, this.generateNPC(this.npcs));
+                            // Recycle street NCPs only when they are off-map AND off-camera
+                            const offCamera = (npc.x > this.camera.x + this.canvas.width + 150);
+                            if (offCamera) {
+                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) {
+                                    npc.x = -200; // Loop back
+                                } else {
+                                    Object.assign(npc, this.generateNPC(this.npcs));
+                                }
                             }
                         } else {
                             moveX = 0;
@@ -3985,25 +4159,35 @@ class PlayableGame {
         const h = this.mapBounds.height;
 
         // Back Wall
-        this.ctx.fillStyle = '#a2c4c9'; // Light teal wallpaper
-        this.ctx.fillRect(0, 0, w, 180);
+        if (this.envAssets['bedroom_wall']) {
+            const pattern = this.ctx.createPattern(this.envAssets['bedroom_wall'], 'repeat');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 0, w, 180);
+        } else {
+            this.ctx.fillStyle = '#a2c4c9'; // Fallback
+            this.ctx.fillRect(0, 0, w, 180);
+        }
 
         // Baseboard
         this.ctx.fillStyle = '#f4f4f4';
         this.ctx.fillRect(0, 180, w, 20);
 
-        // Floor (Wooden Planks)
-        this.ctx.fillStyle = '#cd853f'; // Peru brown floor
-        this.ctx.fillRect(0, 200, w, h - 200);
-
-        // Wood lines
-        this.ctx.strokeStyle = '#a0522d'; // Sienna lines
-        this.ctx.lineWidth = 1;
-        for (let i = 0; i < w; i += 40) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(i, 200);
-            this.ctx.lineTo(i, h);
-            this.ctx.stroke();
+        // Floor
+        if (this.envAssets['bedroom_floor']) {
+            const pattern = this.ctx.createPattern(this.envAssets['bedroom_floor'], 'repeat');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 200, w, h - 200);
+        } else {
+            this.ctx.fillStyle = '#cd853f'; // Fallback
+            this.ctx.fillRect(0, 200, w, h - 200);
+            this.ctx.strokeStyle = '#a0522d';
+            this.ctx.lineWidth = 1;
+            for (let i = 0; i < w; i += 40) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(i, 200);
+                this.ctx.lineTo(i, h);
+                this.ctx.stroke();
+            }
         }
 
         // --- DOORS ---
@@ -4013,19 +4197,14 @@ class PlayableGame {
         // Door 1 (Exit) - Left side
         const exitX = 80;
         const exitY = 50;
-
-        // Frame
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(exitX - 5, exitY - 5, doorWidth + 10, doorHeight + 5);
-        // Door
-        this.ctx.fillStyle = '#deb887'; // Burlywood
+        this.ctx.fillStyle = '#deb887';
         this.ctx.fillRect(exitX, exitY, doorWidth, doorHeight);
-        // Knob
         this.ctx.fillStyle = '#ffd700';
         this.ctx.beginPath();
         this.ctx.arc(exitX + doorWidth - 12, exitY + doorHeight / 2, 5, 0, Math.PI * 2);
         this.ctx.fill();
-        // Label
         this.ctx.fillStyle = '#333';
         this.ctx.font = 'bold 12px Arial';
         this.ctx.textAlign = 'center';
@@ -4034,19 +4213,14 @@ class PlayableGame {
         // Door 2 (Bathroom) - Right side
         const bathX = 640;
         const bathY = 50;
-
-        // Frame
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(bathX - 5, bathY - 5, doorWidth + 10, doorHeight + 5);
-        // Door
-        this.ctx.fillStyle = '#87cefa'; // LightSkyBlue
+        this.ctx.fillStyle = '#87cefa';
         this.ctx.fillRect(bathX, bathY, doorWidth, doorHeight);
-        // Knob
         this.ctx.fillStyle = '#c0c0c0';
         this.ctx.beginPath();
-        this.ctx.arc(bathX + 12, bathY + doorHeight / 2, 5, 0, Math.PI * 2); // Knob on left side for variety
+        this.ctx.arc(bathX + 12, bathY + doorHeight / 2, 5, 0, Math.PI * 2);
         this.ctx.fill();
-        // Label
         this.ctx.fillStyle = '#333';
         this.ctx.font = 'bold 12px Arial';
         this.ctx.textAlign = 'center';
@@ -4054,50 +4228,46 @@ class PlayableGame {
 
         // --- DECOR ---
         // Rug
-        this.ctx.fillStyle = '#6b8e23'; // Olive Drab
+        this.ctx.fillStyle = '#6b8e23';
         this.ctx.beginPath();
         this.ctx.ellipse(this.canvas.width / 2, 380, 160, 60, 0, 0, Math.PI * 2);
         this.ctx.fill();
 
         // Wardrobe
-        this.ctx.fillStyle = '#8b4513'; // Saddle brown
-        this.ctx.fillRect(180, 30, 100, 150);
-        this.ctx.fillStyle = '#a0522d'; // Sienna doors
-        this.ctx.fillRect(185, 40, 40, 130);
-        this.ctx.fillRect(235, 40, 40, 130);
-        this.ctx.fillStyle = '#ffd700'; // Knobs
-        this.ctx.fillRect(220, 100, 4, 15);
-        this.ctx.fillRect(236, 100, 4, 15);
+        if (this.envAssets['bedroom_wardrobe']) {
+            this.ctx.drawImage(this.envAssets['bedroom_wardrobe'], 180, 30, 100, 150);
+        } else {
+            this.ctx.fillStyle = '#8b4513';
+            this.ctx.fillRect(180, 30, 100, 150);
+            this.ctx.fillStyle = '#a0522d';
+            this.ctx.fillRect(185, 40, 40, 130);
+            this.ctx.fillRect(235, 40, 40, 130);
+        }
 
         // Desk
-        this.ctx.fillStyle = '#cd853f'; // Desk color
+        this.ctx.fillStyle = '#cd853f';
         this.ctx.fillRect(480, 130, 120, 50);
-        // PC Screen
         this.ctx.fillStyle = '#111';
         this.ctx.fillRect(510, 100, 60, 40);
-        // PC Screen inner
-        this.ctx.fillStyle = '#4169e1'; // Royal blue screen
+        this.ctx.fillStyle = '#4169e1';
         this.ctx.fillRect(515, 105, 50, 30);
-        // PC Base
         this.ctx.fillStyle = '#333';
         this.ctx.fillRect(530, 140, 20, 10);
-        // Keyboard
         this.ctx.fillStyle = '#ddd';
         this.ctx.fillRect(515, 160, 50, 15);
 
         // Double Bed
-        this.ctx.fillStyle = '#8b4513'; // Bed frame headboard
-        this.ctx.fillRect(300, 80, 140, 100);
-        // Mattress
-        this.ctx.fillStyle = '#f0f8ff'; // Alice blue
-        this.ctx.fillRect(310, 130, 120, 150);
-        // Blanket
-        this.ctx.fillStyle = '#ff69b4'; // Hot pink blanket
-        this.ctx.fillRect(310, 180, 120, 100);
-        // Pillows
-        this.ctx.fillStyle = '#fffafa';
-        this.ctx.fillRect(320, 140, 45, 25);
-        this.ctx.fillRect(375, 140, 45, 25);
+        if (this.envAssets['bedroom_bed']) {
+            // Adjust position for sprite
+            this.ctx.drawImage(this.envAssets['bedroom_bed'], 300, 80, 140, 150);
+        } else {
+            this.ctx.fillStyle = '#8b4513';
+            this.ctx.fillRect(300, 80, 140, 100);
+            this.ctx.fillStyle = '#f0f8ff';
+            this.ctx.fillRect(310, 130, 120, 150);
+            this.ctx.fillStyle = '#ff69b4';
+            this.ctx.fillRect(310, 180, 120, 100);
+        }
     }
 
     drawLivingRoom() {
@@ -4105,16 +4275,28 @@ class PlayableGame {
         const h = this.mapBounds.height;
 
         // Back Wall
-        this.ctx.fillStyle = '#f5e6d3'; // Beige wallpaper
-        this.ctx.fillRect(0, 0, w, 180);
+        if (this.envAssets['livingroom_wall']) {
+            const pattern = this.ctx.createPattern(this.envAssets['livingroom_wall'], 'repeat');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 0, w, 180);
+        } else {
+            this.ctx.fillStyle = '#f5e6d3';
+            this.ctx.fillRect(0, 0, w, 180);
+        }
 
         // Baseboard
         this.ctx.fillStyle = '#3e2723';
         this.ctx.fillRect(0, 180, w, 20);
 
-        // Floor (Carpet)
-        this.ctx.fillStyle = '#8d6e63';
-        this.ctx.fillRect(0, 200, w, h - 200);
+        // Floor (Carpet/Stone)
+        if (this.envAssets['livingroom_floor']) {
+            const pattern = this.ctx.createPattern(this.envAssets['livingroom_floor'], 'repeat');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 200, w, h - 200);
+        } else {
+            this.ctx.fillStyle = '#8d6e63';
+            this.ctx.fillRect(0, 200, w, h - 200);
+        }
 
         // --- TRANSITION ZONE (LEFT END) ---
         // Archway to Kitchen
@@ -4128,9 +4310,9 @@ class PlayableGame {
         // --- TRANSITION ZONE (RIGHT END) ---
         // Door to Street
         const streetDoorX = this.canvas.width - 60;
-        this.ctx.fillStyle = '#a0522d'; // Sienna door
+        this.ctx.fillStyle = '#a0522d';
         this.ctx.fillRect(streetDoorX, 50, 60, 150);
-        this.ctx.fillStyle = '#ffd700'; // Knob
+        this.ctx.fillStyle = '#ffd700';
         this.ctx.beginPath();
         this.ctx.arc(streetDoorX + 15, 125, 5, 0, Math.PI * 2);
         this.ctx.fill();
@@ -4146,19 +4328,14 @@ class PlayableGame {
         // Door back to Bedroom - Left side
         const bedX = 80;
         const bedY = 50;
-
-        // Frame
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(bedX - 5, bedY - 5, doorWidth + 10, doorHeight + 5);
-        // Door
-        this.ctx.fillStyle = '#deb887'; // Burlywood
+        this.ctx.fillStyle = '#deb887';
         this.ctx.fillRect(bedX, bedY, doorWidth, doorHeight);
-        // Knob
         this.ctx.fillStyle = '#ffd700';
         this.ctx.beginPath();
         this.ctx.arc(bedX + doorWidth - 12, bedY + doorHeight / 2, 5, 0, Math.PI * 2);
         this.ctx.fill();
-        // Label
         this.ctx.fillStyle = '#333';
         this.ctx.font = 'bold 12px Arial';
         this.ctx.textAlign = 'center';
@@ -4166,24 +4343,30 @@ class PlayableGame {
 
         // --- LIVING ROOM DECOR ---
         // TV
-        this.ctx.fillStyle = '#111';
-        this.ctx.fillRect(300, 60, 200, 110);
-        this.ctx.fillStyle = '#222';
-        this.ctx.fillRect(310, 70, 180, 90);
-        // TV Stand
-        this.ctx.fillStyle = '#5c4033'; // Dark brown
-        this.ctx.fillRect(280, 170, 240, 40);
+        if (this.envAssets['livingroom_tv']) {
+            this.ctx.drawImage(this.envAssets['livingroom_tv'], 280, 60, 240, 150);
+        } else {
+            this.ctx.fillStyle = '#111';
+            this.ctx.fillRect(300, 60, 200, 110);
+            this.ctx.fillStyle = '#222';
+            this.ctx.fillRect(310, 70, 180, 90);
+            this.ctx.fillStyle = '#5c4033';
+            this.ctx.fillRect(280, 170, 240, 40);
+        }
 
         // Sofa
-        this.ctx.fillStyle = '#8b0000'; // Dark red sofa
-        this.ctx.fillRect(250, 320, 300, 80);
-        // Cushions
-        this.ctx.fillStyle = '#a52a2a';
-        this.ctx.fillRect(260, 310, 135, 40);
-        this.ctx.fillRect(405, 310, 135, 40);
+        if (this.envAssets['livingroom_sofa']) {
+            this.ctx.drawImage(this.envAssets['livingroom_sofa'], 250, 310, 300, 100);
+        } else {
+            this.ctx.fillStyle = '#8b0000';
+            this.ctx.fillRect(250, 320, 300, 80);
+            this.ctx.fillStyle = '#a52a2a';
+            this.ctx.fillRect(260, 310, 135, 40);
+            this.ctx.fillRect(405, 310, 135, 40);
+        }
 
         // Rug
-        this.ctx.fillStyle = '#ffdead'; // Navajo white rug
+        this.ctx.fillStyle = '#ffdead';
         this.ctx.beginPath();
         this.ctx.ellipse(400, 280, 200, 70, 0, 0, Math.PI * 2);
         this.ctx.fill();
@@ -4584,10 +4767,16 @@ class PlayableGame {
         const h = this.mapBounds.height;
 
         // Sky
-        this.ctx.fillStyle = '#87CEEB';
-        this.ctx.fillRect(0, 0, w, 140);
+        if (this.envAssets['street_sky']) {
+            const pattern = this.ctx.createPattern(this.envAssets['street_sky'], 'repeat-x');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 0, w, 140);
+        } else {
+            this.ctx.fillStyle = '#87CEEB';
+            this.ctx.fillRect(0, 0, w, 140);
+        }
 
-        // Buildings background
+        // Buildings background (Keep simple for now, can add a sprite later)
         this.ctx.fillStyle = '#78909c';
         this.ctx.fillRect(0, 40, w, 100);
         this.ctx.fillStyle = '#546e7a';
@@ -4596,11 +4785,17 @@ class PlayableGame {
         }
 
         // Sidewalk
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillRect(0, 140, w, 60);
-        this.ctx.strokeStyle = '#9e9e9e';
-        for (let i = 0; i < w; i += 30) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 140); this.ctx.lineTo(i, 200); this.ctx.stroke();
+        if (this.envAssets['street_pavement']) {
+            const pattern = this.ctx.createPattern(this.envAssets['street_pavement'], 'repeat-x');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, 140, w, 60);
+        } else {
+            this.ctx.fillStyle = '#e0e0e0';
+            this.ctx.fillRect(0, 140, w, 60);
+            this.ctx.strokeStyle = '#9e9e9e';
+            for (let i = 0; i < w; i += 30) {
+                this.ctx.beginPath(); this.ctx.moveTo(i, 140); this.ctx.lineTo(i, 200); this.ctx.stroke();
+            }
         }
 
         // Road
@@ -4616,94 +4811,99 @@ class PlayableGame {
         // --- STREET DECOR ---
 
         // Tree
-        this.ctx.fillStyle = '#8b4513';
-        this.ctx.fillRect(600, 80, 20, 80); // Trunk
-        this.ctx.fillStyle = '#228b22'; // Forest green
-        this.ctx.beginPath();
-        this.ctx.arc(610, 60, 40, 0, Math.PI * 2);
-        this.ctx.arc(580, 80, 30, 0, Math.PI * 2);
-        this.ctx.arc(640, 80, 30, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.envAssets['street_tree']) {
+            this.ctx.drawImage(this.envAssets['street_tree'], 600, 40, 80, 120);
+        } else {
+            this.ctx.fillStyle = '#8b4513';
+            this.ctx.fillRect(600, 80, 20, 80);
+            this.ctx.fillStyle = '#228b22';
+            this.ctx.beginPath();
+            this.ctx.arc(610, 60, 40, 0, Math.PI * 2);
+            this.ctx.arc(580, 80, 30, 0, Math.PI * 2);
+            this.ctx.arc(640, 80, 30, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
 
         // Street Lamp
-        this.ctx.fillStyle = '#555';
-        this.ctx.fillRect(200, 60, 5, 100); // Pole
-        this.ctx.fillRect(190, 50, 25, 10); // Lamp top
-        this.ctx.fillStyle = '#ffffbb';
-        this.ctx.beginPath();
-        this.ctx.arc(202, 65, 8, 0, Math.PI * 2); // Lightbulb
-        this.ctx.fill();
+        if (this.envAssets['street_lamp']) {
+            this.ctx.drawImage(this.envAssets['street_lamp'], 200, 50, 30, 120);
+        } else {
+            this.ctx.fillStyle = '#555';
+            this.ctx.fillRect(200, 60, 5, 100);
+            this.ctx.fillRect(190, 50, 25, 10);
+            this.ctx.fillStyle = '#ffffbb';
+            this.ctx.beginPath();
+            this.ctx.arc(202, 65, 8, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
 
         // --- TRANSITION ZONE (LEFT END) - APARTMENT BUILDING ---
         const bX = 0;
         const bWidth = 140;
-        // Building main body
-        this.ctx.fillStyle = '#90a4ae'; // Blueish grey
-        this.ctx.fillRect(bX, 20, bWidth, 180);
 
-        // Windows
-        this.ctx.fillStyle = '#cfd8dc';
-        for (let wy = 40; wy < 100; wy += 40) {
-            for (let wx = 10; wx < 130; wx += 40) {
-                if (wx === 50 && wy > 60) continue; // Space for the awning/door
-                this.ctx.fillRect(bX + wx, wy, 25, 25);
+        if (this.envAssets['street_apt']) {
+            this.ctx.drawImage(this.envAssets['street_apt'], bX, 20, bWidth, 180);
+        } else {
+            // Building main body
+            this.ctx.fillStyle = '#90a4ae';
+            this.ctx.fillRect(bX, 20, bWidth, 180);
+
+            // Windows
+            this.ctx.fillStyle = '#cfd8dc';
+            for (let wy = 40; wy < 100; wy += 40) {
+                for (let wx = 10; wx < 130; wx += 40) {
+                    if (wx === 50 && wy > 60) continue;
+                    this.ctx.fillRect(bX + wx, wy, 25, 25);
+                }
             }
+
+            // Door back to house
+            const houseDoorX = 50;
+            this.ctx.fillStyle = '#5d4037';
+            this.ctx.fillRect(houseDoorX, 120, 40, 80);
+            this.ctx.fillStyle = '#ffd700';
+            this.ctx.beginPath();
+            this.ctx.arc(houseDoorX + 32, 160, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Building Sign/Awning
+            this.ctx.fillStyle = '#ff7043';
+            this.ctx.fillRect(bX, 100, bWidth, 20);
+            this.ctx.fillStyle = '#000';
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("APTOS", houseDoorX + 20, 98);
         }
-
-        // Door back to house
-        const houseDoorX = 50;
-        this.ctx.fillStyle = '#5d4037'; // Dark brown door
-        this.ctx.fillRect(houseDoorX, 120, 40, 80);
-        this.ctx.fillStyle = '#111'; // Inner shadow
-        this.ctx.fillRect(houseDoorX + 2, 122, 36, 78);
-        this.ctx.fillStyle = '#5d4037';
-        this.ctx.fillRect(houseDoorX + 4, 124, 32, 74);
-
-        this.ctx.fillStyle = '#ffd700'; // Knob
-        this.ctx.beginPath();
-        this.ctx.arc(houseDoorX + 32, 160, 4, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Building Sign/Awning
-        this.ctx.fillStyle = '#ff7043'; // Deep orange awning
-        this.ctx.fillRect(bX, 100, bWidth, 20);
-
-        // Stripes on awning
-        this.ctx.fillStyle = '#ffccbc';
-        for (let ax = 0; ax < bWidth; ax += 20) {
-            this.ctx.fillRect(bX + ax + 10, 100, 10, 20);
-        }
-
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 10px Arial';
-        this.ctx.textAlign = 'center';
-        // Add a sign slightly above the door
-        this.ctx.fillStyle = '#eceff1';
-        this.ctx.fillRect(houseDoorX - 10, 90, 60, 10);
-        this.ctx.fillStyle = '#000';
-        this.ctx.fillText("APTOS", houseDoorX + 20, 98);
 
         // --- NEW LOCATIONS ---
 
         // Coffee Shop
-        this.ctx.fillStyle = '#6d4c41'; // Brown
-        this.ctx.fillRect(300, 80, 100, 120);
-        this.ctx.fillStyle = '#d7ccc8'; // Light Brown window
-        this.ctx.fillRect(310, 120, 80, 50);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("CAFETERIA", 350, 100);
+        if (this.envAssets['street_coffee']) {
+            this.ctx.drawImage(this.envAssets['street_coffee'], 300, 80, 100, 120);
+        } else {
+            this.ctx.fillStyle = '#6d4c41';
+            this.ctx.fillRect(300, 80, 100, 120);
+            this.ctx.fillStyle = '#d7ccc8'; // Light Brown window
+            this.ctx.fillRect(310, 120, 80, 50);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("CAFETERIA", 350, 100);
+        }
 
         // Gym
-        this.ctx.fillStyle = '#455a64'; // Blue grey
-        this.ctx.fillRect(450, 60, 120, 140);
-        this.ctx.fillStyle = '#b0bec5'; // Light grey window
-        this.ctx.fillRect(460, 100, 100, 60);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("ACADEMIA", 510, 90);
+        if (this.envAssets['street_gym']) {
+            this.ctx.drawImage(this.envAssets['street_gym'], 450, 60, 120, 140);
+        } else {
+            this.ctx.fillStyle = '#455a64';
+            this.ctx.fillRect(450, 60, 120, 140);
+            this.ctx.fillStyle = '#b0bec5'; // Light grey window
+            this.ctx.fillRect(460, 100, 100, 60);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("ACADEMIA", 510, 90);
+        }
 
         // Plaza (Park area)
         this.ctx.fillStyle = '#81c784'; // Light green grass
@@ -4719,20 +4919,18 @@ class PlayableGame {
         this.ctx.textAlign = 'center';
         this.ctx.fillText("PRAÇA", 775, 110);
 
-        // Grocery Store (Mercearia)
-        this.ctx.fillStyle = '#f44336'; // Red facade
-        this.ctx.fillRect(950, 60, 140, 140);
-        this.ctx.fillStyle = '#ffc107'; // Yellow awning
-        this.ctx.fillRect(940, 90, 160, 20);
-        this.ctx.fillStyle = '#fff'; // Glass door/window
-        this.ctx.fillRect(990, 110, 60, 90);
-        this.ctx.fillStyle = '#111';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("MERCEARIA", 1020, 80);
+        // Grocery (Mercadinho)
+        if (this.envAssets['street_grocery']) {
+            this.ctx.drawImage(this.envAssets['street_grocery'], 950, 80, 120, 120);
+        } else {
+            this.ctx.fillStyle = '#388e3c';
+            this.ctx.fillRect(950, 80, 120, 120);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("MERCADO", 1010, 100);
+        }
     }
-
-
 
     drawNPC(npc) {
         const canWalk = npc.speed > 0;
@@ -5053,22 +5251,38 @@ class PlayableGame {
         // Collect all entities in the scene that need depth sorting
         let entities = [];
 
+        // Camera bounds for culling
+        const camLeft = this.camera.x - 100;
+        const camRight = this.camera.x + this.canvas.width + 100;
+        const camTop = this.camera.y - 100;
+        const camBottom = this.camera.y + this.canvas.height + 100;
+
         entities.push({
             type: 'player',
             y: this.player.y,
             entity: this.player
         });
 
-        // Draw NPCs in the same room
+        if (this.bus && this.bus.visible && this.currentRoom === 'street') {
+            entities.push({
+                type: 'bus',
+                y: this.bus.y + 50, // Origin for depth sorting
+                entity: this.bus
+            });
+        }
+
         if (this.npcs) {
             this.npcs.forEach(npc => {
                 const npcRoom = npc.currentRoom || npc.initial_room || 'street';
                 if (npcRoom === this.currentRoom) {
-                    entities.push({
-                        type: 'npc',
-                        y: npc.y,
-                        entity: npc
-                    });
+                    // RENDERING CULLING: Skip if way off-screen
+                    if (npc.x > camLeft && npc.x < camRight && npc.y > camTop && npc.y < camBottom) {
+                        entities.push({
+                            type: 'npc',
+                            y: npc.y,
+                            entity: npc
+                        });
+                    }
                 }
             });
         }
@@ -5078,9 +5292,11 @@ class PlayableGame {
 
         entities.forEach(item => {
             if (item.type === 'player') {
-                this.drawCharacter();
+                if (this.player.visible !== false) this.drawCharacter();
             } else if (item.type === 'npc') {
                 this.drawNPC(item.entity);
+            } else if (item.type === 'bus') {
+                this.drawBus();
             }
         });
     }
@@ -5098,5 +5314,75 @@ class PlayableGame {
         this.drawEntities(); // Replaces drawCharacter() to handle depth sorting of all entities
 
         requestAnimationFrame((ts) => this.loop(ts));
+    }
+
+    drawBus() {
+        if (!this.bus || !this.bus.image || !this.bus.visible) return;
+
+        const dx = this.bus.x - this.camera.x;
+        const dy = this.bus.y - this.camera.y;
+
+        // Bus dimensions
+        const busWidth = 320;
+        const busHeight = 160;
+
+        this.ctx.save();
+        // Move para a posição central do ônibus onde ele será desenhado
+        this.ctx.translate(dx, dy);
+        // O asset original olha para a ESQUERDA. Para olhar para a DIREITA (L->R), invertemos o scaleX.
+        this.ctx.scale(-1, 1);
+
+        this.ctx.drawImage(this.bus.image, -busWidth / 2, -busHeight, busWidth, busHeight);
+        this.ctx.restore();
+    }
+
+    loadBusAsset() {
+        this.bus.image = new Image();
+        this.bus.image.onload = () => {
+            console.log("Bus asset loaded successfully from modelos/bus.png");
+        };
+        this.bus.image.onerror = () => {
+            console.warn("Failed to load bus asset from modelos/bus.png");
+        };
+        this.bus.image.src = 'modelos/bus.png';
+    }
+
+    async loadEnvironmentAssets() {
+        const assetsToLoad = {
+            'bedroom_wall': 'assets/environments/bedroom_bg_wall.png',
+            'bedroom_floor': 'assets/environments/bedroom_bg_floor.png',
+            'bedroom_bed': 'assets/props/bedroom_prop_bed.png',
+            'bedroom_wardrobe': 'assets/props/bedroom_prop_wardrobe.png',
+            'street_sky': 'assets/environments/street_bg_sky.png',
+            'street_pavement': 'assets/environments/street_bg_pavement.png',
+            'street_lamp': 'assets/props/street_prop_lamp.png',
+            'street_tree': 'assets/props/street_prop_tree.png',
+            'street_apt': 'assets/environments/street_building_apartment.png',
+            'street_coffee': 'assets/environments/street_building_coffee.png',
+            'street_gym': 'assets/environments/street_building_gym.png',
+            'street_grocery': 'assets/environments/street_building_grocery.png',
+            'livingroom_wall': 'assets/environments/livingroom_bg_wall.png',
+            'livingroom_floor': 'assets/environments/livingroom_bg_floor.png',
+            'livingroom_sofa': 'assets/props/livingroom_prop_sofa.png',
+            'livingroom_tv': 'assets/props/livingroom_prop_tv.png'
+        };
+
+        const loadPromises = Object.entries(assetsToLoad).map(([key, src]) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    this.envAssets[key] = img;
+                    resolve();
+                };
+                img.onerror = () => {
+                    console.warn(`Failed to load environment asset: ${src}`);
+                    resolve();
+                };
+                img.src = src;
+            });
+        });
+
+        await Promise.all(loadPromises);
+        console.log("Environment assets loaded successfully.");
     }
 }
