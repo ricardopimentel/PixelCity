@@ -85,7 +85,7 @@
                 {
                     "id": "t1",
                     "type": "go_to_location",
-                    "target": "downtown_diner",
+                    "target": "coffee_shop",
                     "description": "Vá até a Lanchonete no centro da cidade."
                 },
                 {
@@ -113,7 +113,7 @@
                 "type": "mission_completed",
                 "target": "m03_a_busca_pelo_emprego"
             },
-            "mentor_message": "Boa! Lavar prato e limpar mesa não é o glamour que você sonhava, mas paga as contas. Faz o teu primeiro turno lá e tenta juntar pelo menos uns R$ 200 pra garantir a semana do aluguel. Mostra que o povo da nossa terra tem garra pra trabalhar!",
+            "mentor_message": "Boa! Lavar prato e limpar mesa não é o glamour que você sonhava, mas paga as contas. Faz o teu primeiro turno lá e tenta juntar pelo menos uns R$ 200 pra pagar o aluguel pro Seu Jorge, o dono do prédio. Ele costuma ficar ali na frente do edifício na rua. Mostra que o povo da nossa terra tem garra pra trabalhar!",
             "tasks": [
                 {
                     "id": "t1",
@@ -128,6 +128,12 @@
                     "target": "money",
                     "value": 200,
                     "description": "Acumule R$ 200 na sua carteira."
+                },
+                {
+                    "id": "t3",
+                    "type": "pay_rent",
+                    "target": "npc_landlord",
+                    "description": "Pague o aluguel conversando com o Seu Jorge na rua."
                 }
             ],
             "rewards": {
@@ -142,7 +148,7 @@
                 "type": "mission_completed",
                 "target": "m04_suor_e_lagrimas"
             },
-            "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festinha aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
+            "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festa de inauguração de um novo clube aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
             "tasks": [
                 {
                     "id": "t1",

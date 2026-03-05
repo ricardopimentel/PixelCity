@@ -4,17 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High School Life</title>
+    <title>Pixel City Life</title>
     <link rel="stylesheet" href="css/style.css">
     <!-- Keeping old style just in case of fallback, but game.css overrides -->
-    <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/game_new.css">
 </head>
 
 <body>
     <div id="game-container">
         <!-- Tela Inicial -->
         <div id="start-screen" class="screen active">
-            <h1 class="game-title">High School Life</h1>
+            <h1 class="game-title">Pixel City Life</h1>
             <button id="btn-start-game" class="btn-primary">Criar Novo Personagem</button>
             <button id="btn-load-game" class="btn-primary"
                 style="display: none; background: #6c5ce7; margin-top: 10px;">Continuar Vida</button>
@@ -36,16 +36,14 @@
                     </select>
                     <button id="btn-random-char" class="btn-secondary" style="margin-left: 10px;">Aleatório</button>
                 </div>
-                <!-- Face selections -->
-                <div class="face-controls"
-                    style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;">
-                    <button class="btn-face btn-secondary active-face" data-face="static" title="Estática">😐</button>
-                    <button class="btn-face btn-secondary" data-face="smile" title="Sorriso">😀</button>
-                    <button class="btn-face btn-secondary" data-face="angry" title="Zangado">😠</button>
-                    <button class="btn-face btn-secondary" data-face="kissing" title="Beijo">😗</button>
-                    <button class="btn-face btn-secondary" data-face="sad" title="Triste">😢</button>
-                    <button class="btn-face btn-secondary" data-face="boring" title="Entediado">😑</button>
-                    <button class="btn-face btn-secondary" data-face="tired" title="Cansado">😫</button>
+                <div class="face-controls">
+                    <button class="btn-face active-face" data-face="static" title="Estática">😐</button>
+                    <button class="btn-face" data-face="smile" title="Sorriso">😀</button>
+                    <button class="btn-face" data-face="angry" title="Zangado">😠</button>
+                    <button class="btn-face" data-face="kissing" title="Beijo">😗</button>
+                    <button class="btn-face" data-face="sad" title="Triste">😢</button>
+                    <button class="btn-face" data-face="boring" title="Entediado">😑</button>
+                    <button class="btn-face" data-face="tired" title="Cansado">😫</button>
                 </div>
             </div>
 
@@ -141,7 +139,7 @@
 
         <!-- Tela de Atributos e Interesses -->
         <div id="attributes-screen" class="screen">
-            <div class="char-controls-container" style="max-width: 600px; width: 90%;">
+            <div class="char-controls-container">
                 <h2>Sua Personalidade</h2>
                 <p>Distribua <span id="points-remaining"
                         style="font-weight: bold; color: var(--accent-color);">10</span> pontos iniciais:</p>
@@ -210,9 +208,7 @@
             </div>
         </div>
 
-        <!-- Tela do Jogo -->
-        <div id="game-screen" class="screen"
-            style="position: relative; padding: 0; margin: 0; width: 100%; height: 100%;">
+        <div id="game-screen" class="screen">
             <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
 
                 <!-- Game Stats HUD (Top Bar) -->
@@ -253,30 +249,7 @@
                     </div>
                 </div>
 
-                <!-- Painel de Informações do NPC (Lado Direito) -->
-                <div id="npc-debug-panel"
-                    style="display: none; position: fixed; top: 60px; right: 20px; width: 220px; background: rgba(0, 0, 0, 0.85); color: white; border: 2px solid #555; border-radius: 8px; padding: 15px; font-family: 'Courier New', Courier, monospace; z-index: 40; box-shadow: -2px 4px 10px rgba(0,0,0,0.5);">
-                    <h3 id="panel-npc-name"
-                        style="margin: 0 0 10px 0; border-bottom: 1px dashed #777; padding-bottom: 5px; color: #ff9ff3; text-align: center;">
-                        Nome do NPC</h3>
 
-                    <div style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
-                        <div><strong style="color: #48dbfb;">Gênero:</strong> <span id="panel-npc-gender">---</span>
-                        </div>
-                        <div><strong style="color: #feca57;">Orientação:</strong> <span
-                                id="panel-npc-orientation">---</span></div>
-                        <div><strong style="color: #1dd1a1;">Amizade:</strong> <span id="panel-npc-friendship">0%</span>
-                        </div>
-
-                        <div style="margin-top: 5px;">
-                            <strong style="color: #ff6b6b; display: block; margin-bottom: 5px;">Acha Legal
-                                (Interesses):</strong>
-                            <div id="panel-npc-interests" style="display: flex; flex-wrap: wrap; gap: 3px;">
-                                <!-- Tags via JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <canvas id="game-canvas"
                     style="background-color: #333; display: block; width: 100%; height: 100%; flex-grow: 1; margin: 0; padding: 0;"></canvas>
@@ -385,26 +358,20 @@
                         </div>
 
                         <!-- App Inner View: Active Chat -->
-                        <div id="phone-app-active-chat"
-                            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #e5ddd5; border-radius: 0; flex-direction: column; color: black; z-index: 15; padding-top: 25px;">
+                        <div id="phone-app-active-chat">
                             <!-- Header -->
-                            <div id="phone-active-chat-header"
-                                style="background: #2ecc71; color: white; padding: 10px; display: flex; flex-direction:column; align-items: center; justify-content:center; gap: 5px; font-weight: bold; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 50px;">
-                                <span id="phone-active-chat-name"
-                                    style="text-align: center; font-size: 1.1rem; width:100%;">Nome</span>
-                                <div id="phone-active-chat-friendship-container"
-                                    style="font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; display:inline-block;">
+                            <div id="phone-active-chat-header">
+                                <span id="phone-active-chat-name">Nome</span>
+                                <div id="phone-active-chat-friendship-container">
                                     💞 <span id="phone-active-chat-friendship">0%</span>
                                 </div>
                             </div>
                             <!-- Chat History -->
-                            <div id="phone-active-chat-history"
-                                style="flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                            <div id="phone-active-chat-history">
                                 <!-- Bubbles injected via JS -->
                             </div>
                             <!-- Chat Options -->
-                            <div id="phone-active-chat-options"
-                                style="background: #f8f9fa; padding: 10px; border-top: 1px solid #ddd; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; z-index:2;">
+                            <div id="phone-active-chat-options">
                                 <!-- Options injected via JS -->
                             </div>
                         </div>
@@ -482,7 +449,7 @@
                             <div
                                 style="width: 60px; height: 60px; background: rgba(255,255,255,0.8); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                                 👕</div>
-                            <span <span
+                            <span
                                 style="font-size: 0.9rem; margin-top: 5px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: bold;">Loja
                                 Roupa</span>
                         </div>
@@ -507,36 +474,47 @@
                 </div>
             </div> <!-- FECHA O MODAL-COMPUTER AQUI! -->
 
-            <!-- Modal NPC Interaction (Smartwatch Circular Menu) -->
-            <div id="modal-npc-dialogue"
-                style="display: none; position: absolute; z-index: 100; flex-direction: column; align-items: center; justify-content: space-between; width: 120px; height: 120px; border-radius: 50%; background: rgba(20,20,20,0.95); border: 2px solid #444; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8); pointer-events: auto;">
+            <!-- Modal NPC Interaction (Smartwatch Circular Menu Style) -->
+            <div id="modal-npc-dialogue">
 
                 <!-- Tiny Friendship / Info Node (Top Arc) -->
-                <div style="width: 100%; text-align: center; margin-top: 10px; z-index: 10; flex-shrink: 0;">
-                    <div id="npc-dialogue-name"
-                        style="margin: 0; font-size: 10px; color: #fff; font-family: 'Patrick Hand', cursive; font-weight: bold; text-shadow: 1px 1px 2px #000;">
+                <div class="menu-header">
+                    <div id="npc-dialogue-name">
                         Nome</div>
-                    <div
-                        style="width: 40px; height: 3px; background: #333; border-radius: 2px; overflow: hidden; margin: 2px auto 0 auto; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);">
-                        <div id="npc-friendship-bar"
-                            style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9ff3, #feca57); transition: width 0.3s ease;">
+                    <div id="npc-friendship-bar-container">
+                        <div id="npc-friendship-bar">
                         </div>
                     </div>
                 </div>
 
                 <!-- Scrolling Menu (Center area) -->
-                <div
-                    style="flex-grow: 1; width: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 5px;">
-                    <ul id="npc-dialogue-options"
-                        style="list-style: none; padding: 0; margin: 0; position: absolute; width: 100%; display: flex; flex-direction: column; align-items: center; transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); top: 50%;">
+                <div class="menu-options-container">
+                    <ul id="npc-dialogue-options">
                         <!-- Li items injected via JS -->
                     </ul>
                 </div>
 
                 <!-- Text Label / Prompt (Bottom Arc) -->
-                <p id="npc-dialogue-prompt"
-                    style="font-size: 9px; font-weight: bold; font-family: 'Patrick Hand', cursive; color: #aaa; text-align: center; margin-bottom: 10px; z-index: 10; flex-shrink: 0; padding: 0 5px;">
+                <p id="npc-dialogue-prompt">
                     O que quer falar?</p>
+            </div>
+
+            <div id="npc-debug-panel">
+                <h3 id="panel-npc-name">NPC Info</h3>
+                <div class="info-row">
+                    <div><span class="info-label">Gênero:</span> <span id="panel-npc-gender" class="info-value">M</span>
+                    </div>
+                    <div><span class="info-label">Orientação:</span> <span id="panel-npc-orientation"
+                            class="info-value">H</span></div>
+                    <div><span class="info-label">Amizade:</span> <span id="panel-npc-friendship" class="info-value"
+                            style="font-weight: bold;">0%</span></div>
+                </div>
+                <div class="interests-section">
+                    <strong>Acha Legal (Interesses):</strong>
+                    <div id="panel-npc-interests">
+                        <!-- Tags injected via JS -->
+                    </div>
+                </div>
             </div>
 
             <!-- Modal Mentor Message (Story popups) -->

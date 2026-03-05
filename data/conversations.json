@@ -634,5 +634,119 @@
             "Olhar para estátuas paradas de pedra num ambiente antigo ataca muito o meu tédio.",
             "Arrastar rodinhas na calçada acaba com meu braço, viajo de forma minimalista."
         ]
+    },
+    "money": {
+        "player": [
+            "Estou pensando em como fazer meu dinheiro render mais.",
+            "Você prefere investir ou guardar na poupança?",
+            "A economia está tão instável ultimamente...",
+            "Queria encontrar uma forma de ganhar dinheiro extra.",
+            "Você acha que poupar desde cedo faz mesmo a diferença?",
+            "Planejamento financeiro é a chave para não passar aperto.",
+            "Às vezes eu gasto mais do que deveria com bobeira.",
+            "Qual é o seu maior objetivo financeiro no momento?",
+            "Ganhar na loteria resolveria todos os meus problemas.",
+            "Você costuma usar aplicativos para controlar seus gastos?"
+        ],
+        "positive": [
+            "Dinheiro no bolso é o que move o mundo! Adoro finanças.",
+            "Investir é o segredo para ter uma vida tranquila no futuro.",
+            "Com certeza! Quem não planeja acaba ficando no vermelho.",
+            "Sempre bom ter uma reserva de emergência guardada.",
+            "Economizar é uma virtude que eu pratico todos os dias.",
+            "Dinheiro traz liberdade pra gente fazer o que ama.",
+            "Eu adoro ver meu saldo subindo, é muito gratificante!",
+            "Falar de negócios me empolga muito, vamos trocar dicas.",
+            "Dinheiro bem gasto é aquele que traz experiências boas.",
+            "Manter as contas em dia me dá uma paz de espírito enorme."
+        ],
+        "negative": [
+            "Ah, dinheiro só traz dor de cabeça e preocupação.",
+            "Prefiro nem olhar pro meu saldo pra não ficar triste.",
+            "Essa fissura por lucrar com tudo me cansa um pouco.",
+            "Infelizmente, o dinheiro nunca parece ser o suficiente.",
+            "Odeio falar de contas, boletos e taxas, é um tédio.",
+            "Acho que a ganância humana não tem limites hoje em dia.",
+            "Sou péssimo com números e finanças, evito o assunto.",
+            "Dinheiro não compra felicidade, só compra conveniência.",
+            "Tento viver de forma simples, sem me prender a bens materiais.",
+            "A economia é uma coisa muito complicada pra eu entender."
+        ]
+    },
+    "rules": {
+        "player": [
+            "Seguir as regras é essencial para manter a ordem, não acha?",
+            "O que você pensa sobre as normas de convivência daqui?",
+            "Acho que disciplina é a base de qualquer sucesso.",
+            "Você é do tipo que segue tudo à risca ou costuma improvisar?",
+            "As regras existem por um motivo, mesmo que a gente não goste.",
+            "Ser pontual é uma das regras mais importantes para mim.",
+            "Acho que o mundo seria um caos se cada um fizesse o que quisesse.",
+            "Você já teve problemas por quebrar alguma regra boba?",
+            "Respeitar o espaço alheio é a regra de ouro da vida.",
+            "Eu me sinto mais seguro quando sei exatamente o que posso fazer."
+        ],
+        "positive": [
+            "Sem disciplina nada funciona! Eu sigo tudo rigorosamente.",
+            "Concordo! A ordem traz paz para todo mundo ao redor.",
+            "Regras foram feitas para serem cumpridas, ponto final.",
+            "Eu adoro uma rotina bem estruturada e cheia de normas.",
+            "A justiça só acontece quando todos respeitam as mesmas leis.",
+            "Ser correto e ético é a minha maior prioridade na vida.",
+            "Respeito é bom e conserva os dentes, como dizem por aí!",
+            "Sempre busco o manual de instruções antes de começar algo.",
+            "Para mim, a hierarquia e o respeito à autoridade são fundamentais.",
+            "Dormir com a consciência limpa de que fiz o certo não tem preço."
+        ],
+        "negative": [
+            "Ah, regras são muito limitantes, prefiro me sentir livre.",
+            "Às vezes é preciso quebrar as normas para inovar e avançar.",
+            "Acho que muitas regras são apenas formas de controle chato.",
+            "Prefiro agir de acordo com o meu instinto do que com manuais.",
+            "Essa rigidez toda acaba tirando a espontaneidade da vida.",
+            "Detesto burocracia e normas que não fazem o menor sentido.",
+            "A vida é curta demais pra ficar seguindo etiqueta o tempo todo.",
+            "Eu sempre questiono quem criou as regras e com que interesse.",
+            "Um pouco de caos e bagunça às vezes faz muito bem.",
+            "Acho essa obsessão por ordem uma coisa meio opressora."
+        ]
+    },
+    "cleaning": {
+        "player": [
+            "Nada melhor do que entrar em uma casa limpa e cheirosa.",
+            "Você tem alguma técnica infalível para tirar manchas?",
+            "Organizar o guarda-roupa me ajuda a organizar a mente.",
+            "Gosto de deixar tudo brilhando antes de começar o dia.",
+            "Acho que a limpeza reflete muito a nossa saúde mental.",
+            "Fazer faxina ouvindo música é quase uma meditação pra mim.",
+            "Você prefere móveis minimalistas que facilitam a limpeza?",
+            "Manter a cozinha impecável é o meu maior desafio diário.",
+            "O que você acha do uso de produtos ecológicos na faxina?",
+            "Uma boa vassoura e um balde resolvem metade dos meus estresses."
+        ],
+        "positive": [
+            "Limpeza é fundamental! Eu sou aficionado por organização.",
+            "Adoro o cheiro de produto de limpeza novo, transmite frescor.",
+            "Mantenho tudo no lugar, cada coisa tem o seu cantinho.",
+            "Limpar a casa me dá uma sensação de controle e realização.",
+            "Ver o antes e depois de uma faxina pesada é muito satisfatório!",
+            "Com certeza! Ambiente sujo acaba com a minha produtividade.",
+            "Faxinar é o meu exercício físico favorito da semana.",
+            "Nada supera o brilho de um chão recém-encerado.",
+            "Organização é beleza, eu prezo muito pela estética da ordem.",
+            "Pratos limpos e pia seca são a minha maior felicidade doméstica."
+        ],
+        "negative": [
+            "Ah, que tédio... Faxina é uma perda de tempo sem fim.",
+            "Prefiro viver na bagunça criativa do que ser escravo da vassoura.",
+            "Sempre deixo a limpeza pra depois, tem coisa mais legal pra fazer.",
+            "Limpar é enxugar gelo, amanhã já vai estar tudo sujo de novo.",
+            "Tenho preguiça só de pensar em pegar num pano de chão.",
+            "Sinceramente, não me importo muito com a poeira nos móveis.",
+            "Contrataria alguém pra fazer tudo se eu tivesse muito dinheiro.",
+            "Esses produtos químicos me dão alergia e o cheiro é forte demais.",
+            "Bagunça não me incomoda, contanto que eu saiba onde está tudo.",
+            "Viver pra limpar casa me parece um castigo desnecessário."
+        ]
     }
 }

@@ -1,58 +1,39 @@
-/* High School / Notebook Theme */
-@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Roboto:wght@300;400;700&display=swap');
+/* Pixel City Life - Urban Modern Theme */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Roboto:wght@300;400;700&display=swap');
 
 :root {
-    --paper-bg: #fdfdfd;
-    --line-color: #a2a2a2;
-    /* Light blue/grey for lines */
-    --margin-color: #ffcccc;
-    /* Red margin line */
-    --ink-color: #2c3e50;
-    /* Dark blue pen color */
-    --pencil-color: #555;
-    --highlight-color: #fff9c4;
-    /* Yellow highlighter */
-    --accent-color: #e74c3c;
-    /* Teacher's red pen */
-    --sticker-border: #f0f0f0;
+    --bg-dark: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.7);
+    --primary-cyan: #06b6d4;
+    --primary-pink: #ec4899;
+    --accent-purple: #8b5cf6;
+    --text-white: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glow-cyan: 0 0 15px rgba(6, 182, 212, 0.4);
 }
 
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Patrick Hand', cursive;
-    /* Handwritten feel */
-    background-color: #e0e0e0;
-    /* Desk color */
-    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
-    /* Subtle wood texture */
+    font-family: 'Outfit', sans-serif;
+    background-color: #020617;
+    background-image: radial-gradient(circle at top right, #1e293b, #020617);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    /* keep center, but with min-height it will scroll if needed */
-    color: var(--ink-color);
+    color: var(--text-white);
     box-sizing: border-box;
     overflow: hidden;
-    /* Prevent scrollbars when fullscreen */
 }
 
 #game-container {
     width: 100%;
     height: 100vh;
     position: relative;
-    /* Notebook Paper Look */
-    background-color: var(--paper-bg);
-    background-image:
-        linear-gradient(90deg, transparent 79px, #abced4 79px, #abced4 81px, transparent 81px),
-        /* Red margin */
-        linear-gradient(#eee .1em, transparent .1em);
-    /* Horizontal lines */
-    background-size: 100% 1.5em;
-    /* Line height */
-    box-shadow:
-        0 1px 4px rgba(0, 0, 0, 0.3),
-        0 0 40px rgba(0, 0, 0, 0.1) inset;
+    background-color: var(--bg-dark);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     overflow: hidden;
 }
 
@@ -74,57 +55,61 @@ body {
 
 .screen.active {
     display: flex;
-    animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+.smartwatch-option {
+    transition: all 0.2s;
+    user-select: none;
+    cursor: pointer;
 }
+
+.smartwatch-option.disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.smartwatch-option.selected {
+    transform: scale(1.1);
+}
+
+
 
 /* Start Screen */
 /* Doodle background styling could go here */
 
 
 .game-title {
-    font-size: 5rem;
-    font-weight: normal;
+    font-size: 4rem;
+    font-weight: 700;
     text-align: center;
     margin-bottom: 50px;
-    color: var(--ink-color);
-    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-    transform: rotate(-3deg);
-    background: var(--highlight-color);
-    padding: 10px 30px;
-    border-radius: 5px 25px 5px 25px;
-    /* Marker stroke shape */
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    color: var(--text-white);
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--primary-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.5));
 }
 
 /* Button Styles - "Sticker" or "Sketch" look */
 .btn-primary {
-    padding: 15px 40px;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 2rem;
+    padding: 12px 35px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: white;
-    background: var(--accent-color);
+    background: linear-gradient(90deg, var(--primary-cyan), var(--accent-purple));
     border: none;
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-    /* Hand-drawn box shape */
+    border-radius: 50px;
     cursor: pointer;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
-    transform: rotate(2deg);
+    box-shadow: var(--glow-cyan);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary:hover {
-    transform: scale(1.05) rotate(1deg);
-    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
 }
 
 /* Character Creation Screen */
@@ -149,33 +134,45 @@ body {
 }
 
 .preview-box {
-    width: 60px;
-    /* Fits 48px + padding/border */
-    height: 140px;
-    /* Fits 120px + padding/border */
-    border: 2px solid var(--ink-color);
-    border-radius: 10px;
-    background: white;
+    width: 100px;
+    height: 180px;
+    border: 2px solid var(--glass-border);
+    border-radius: 20px;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 20px;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
-    /* "Photo taped to paper" look */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
+    overflow: hidden;
 }
 
 .preview-box::before {
     content: '';
     position: absolute;
-    top: -15px;
-    left: 40%;
-    width: 40px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid #ddd;
-    transform: rotate(-5deg);
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(transparent, var(--primary-cyan), transparent 30%);
+    animation: rotate 4s linear infinite;
+    z-index: 0;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.preview-box canvas {
+    position: relative;
+    z-index: 1;
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 #char-preview-canvas {
@@ -192,17 +189,18 @@ body {
 
 .char-controls-container {
     flex: 1.5;
-    padding-left: 20px;
+    padding: 30px;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.7);
-    /* Slight fade for readability over lines */
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.05);
-    transform: rotate(0.5deg);
-    max-height: 500px;
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    max-height: 550px;
     overflow-y: auto;
+    color: var(--text-white);
 }
 
 .char-controls-cont.wardrobe-item-desc {
@@ -316,13 +314,14 @@ body {
 }
 
 .char-controls-container h2 {
-    font-size: 2rem;
-    /* Was 2.5rem */
+    font-size: 2.2rem;
+    font-weight: 700;
     margin-top: 0;
-    margin-bottom: 15px;
-    text-decoration: underline;
-    text-decoration-color: var(--accent-color);
-    text-decoration-style: wavy;
+    margin-bottom: 20px;
+    background: linear-gradient(90deg, var(--text-white), var(--text-muted));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Smartphone Keyboard Navigation Selection */
@@ -410,27 +409,29 @@ body {
 }
 
 .interest-btn {
-    background: transparent;
-    border: 2px solid var(--ink-color);
-    color: var(--ink-color);
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-white);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .interest-btn:hover {
-    background: var(--highlight-color);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-cyan);
     transform: translateY(-2px);
 }
 
 .interest-btn.selected {
-    background: var(--accent-color);
+    background: var(--primary-cyan);
     color: white;
-    border-color: var(--accent-color);
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-cyan);
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
 }
 
 .control-group h3 {
@@ -458,21 +459,23 @@ body {
 /* Inputs styled as handwritten fill-ins */
 .input-text,
 select {
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid var(--ink-color);
-    color: var(--ink-color);
-    padding: 3px 6px;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.1rem;
-    /* Was 1.3rem */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-white);
+    padding: 8px 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
     width: 60%;
     outline: none;
+    transition: all 0.3s;
 }
 
 .input-text:focus,
 select:focus {
-    border-bottom-color: var(--accent-color);
+    border-color: var(--primary-cyan);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 /* Style Selector Arrows */
@@ -583,37 +586,42 @@ select:focus {
     background: var(--ink-color);
 }
 
-/* Smartwatch NPC Dialogue System */
-.smartwatch-option {
-    display: flex;
+/* HUD Styles - Keeping only structural resets if needed, most is inline restored */
+#game-stats-overlay {
+    z-index: 100;
+}
+
+/* Smartphone & Modal Overlays - Standard Modal behavior */
+.modal-overlay {
+    display: none;
+    position: absolute;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    height: 20px;
-    /* Fixed height for math */
-    width: 100%;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 11px;
-    font-family: 'Patrick Hand', cursive;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    transform: scale(0.85);
-    cursor: pointer;
+}
+
+/* NPC Dialogue Overrides */
+#modal-npc-dialogue ul {
+    list-style: none;
+    padding: 0;
     margin: 0;
-    padding: 0 10px;
-    box-sizing: border-box;
-    white-space: nowrap;
 }
 
-.smartwatch-option.disabled {
-    color: rgba(255, 50, 50, 0.3);
-    cursor: not-allowed;
-}
-
-.smartwatch-option.selected {
-    color: #fff;
-    transform: scale(1.15);
+/* Character Creation Specific Labels - ensure readability in the dark theme */
+#character-creation-screen label,
+#attributes-screen label {
+    color: var(--text-white);
     font-weight: bold;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
+}
+
+#character-creation-screen h2,
+#character-creation-screen h3,
+#attributes-screen h2,
+#attributes-screen h3 {
+    color: var(--primary-cyan);
 }

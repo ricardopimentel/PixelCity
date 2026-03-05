@@ -14,11 +14,12 @@
                 "travel",
                 "humor"
             ],
+            "initial_room": "livingroom",
+            "x": 400,
+            "y": 280,
+            "speed": 1,
+            "direction": 2,
             "isPaused": false,
-            "x": -100,
-            "y": 500,
-            "speed": 0,
-            "direction": 0,
             "frame": 0,
             "animTimer": 0,
             "face": {
@@ -122,8 +123,9 @@
                 "cleaning"
             ],
             "isPaused": true,
-            "x": 200,
-            "y": 480,
+            "initial_room": "street",
+            "x": 160,
+            "y": 350,
             "speed": 0,
             "direction": 0,
             "frame": 0,

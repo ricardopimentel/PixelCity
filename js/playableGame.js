@@ -94,12 +94,13 @@ class PlayableGame {
 
     async loadNpcData() {
         try {
+            const v = Date.now();
             const [males, females, convos, flirts, storyNpcs] = await Promise.all([
-                fetch('data/names_male.json').then(res => res.json()),
-                fetch('data/names_female.json').then(res => res.json()),
-                fetch('data/conversations.json').then(res => res.json()),
-                fetch('data/flirts.json').then(res => res.json()),
-                fetch('data/story_npcs.json').then(res => res.json()).catch(() => ({ story_npcs: [] }))
+                fetch(`data/names_male.json?v=${v}`).then(res => res.json()),
+                fetch(`data/names_female.json?v=${v}`).then(res => res.json()),
+                fetch(`data/conversations.json?v=${v}`).then(res => res.json()),
+                fetch(`data/flirts.json?v=${v}`).then(res => res.json()),
+                fetch(`data/story_npcs.json?v=${v}`).then(res => res.json())
             ]);
             this.npcData = {
                 names_male: males,
@@ -109,7 +110,7 @@ class PlayableGame {
                 story_npcs: storyNpcs.story_npcs
             };
         } catch (err) {
-            console.warn("Falha no fetch() devido ao CORS em file:// - Usando Fallback local de conversas e nomes.");
+            console.warn("Falha no fetch() devido ao CORS em file:// - Usando Fallback local.");
             this.npcData = {
                 names_male: [
                     "Lucas", "Mateus", "Pedro", "Arthur", "Enzo", "Gabriel", "Miguel", "Davi",
@@ -773,7 +774,7 @@ class PlayableGame {
                 story_npcs: [
                     {
                         "id": "mentor",
-                        "name": "Mentor",
+                        "name": "Lucas",
                         "gender": "male",
                         "orientation": "heterosexual",
                         "friendship": 50,
@@ -781,9 +782,10 @@ class PlayableGame {
                         "recentTopics": [],
                         "contactAdded": true,
                         "interests": ["books", "travel", "humor"],
-                        "isPaused": false,
-                        "x": -100,
-                        "y": 500,
+                        "isPaused": true,
+                        "initial_room": "livingroom",
+                        "x": 400,
+                        "y": 300,
                         "speed": 0,
                         "direction": 0,
                         "frame": 0,
@@ -810,8 +812,9 @@ class PlayableGame {
                         "contactAdded": false,
                         "interests": ["cooking", "sports", "money"],
                         "isPaused": true,
-                        "x": 400,
-                        "y": 480,
+                        "initial_room": "coffee_shop",
+                        "x": 350,
+                        "y": 300,
                         "speed": 0,
                         "direction": 0,
                         "frame": 0,
@@ -821,16 +824,16 @@ class PlayableGame {
                         "state": {
                             "skinColor": "#f1c27d",
                             "body": { "index": 0, "color": null },
-                            "hair": { "index": 5, "color": "#7f8c8d" },
-                            "torso": { "index": 2, "color": "#ecf0f1" },
-                            "legs": { "index": 0, "color": "#2c3e50" },
-                            "feet": { "index": 0, "color": "#333333" }
+                            "hair": { "index": 9, "color": "#7f8c8d" },
+                            "torso": { "index": 11, "color": "#000000" },
+                            "legs": { "index": 8, "color": "#000000" },
+                            "feet": { "index": 0, "color": "#000000" }
                         }
                     },
                     {
                         "id": "npc_landlord",
-                        "name": "Dona Odete",
-                        "gender": "female",
+                        "name": "Seu Jorge",
+                        "gender": "male",
                         "orientation": "heterosexual",
                         "friendship": -10,
                         "romanced": false,
@@ -838,8 +841,9 @@ class PlayableGame {
                         "contactAdded": false,
                         "interests": ["money", "rules", "cleaning"],
                         "isPaused": true,
-                        "x": 200,
-                        "y": 480,
+                        "initial_room": "street",
+                        "x": 160,
+                        "y": 350,
                         "speed": 0,
                         "direction": 0,
                         "frame": 0,
@@ -920,6 +924,8 @@ class PlayableGame {
                         }
                         break;
                     case 'Escape':
+                        e.stopPropagation();
+                        e.preventDefault();
                         if (this.phoneState.isOpen) {
                             this.toggleSmartphoneModal(); // Close phone
                         } else if (this.dialogueState && this.dialogueState.isOpen && this.dialogueState.node === 'root') {
@@ -1255,6 +1261,12 @@ class PlayableGame {
         } else {
             modal.style.display = 'none';
             this.phoneState.isOpen = false;
+            this.isMenuOpen = false; // Unlock movement
+            this.stopMovement(); // Reset key states to prevent stuck movement
+
+            if (this.dialogueState && this.dialogueState.isPhone) {
+                this.dialogueState = null;
+            }
 
             // Clean up selections
             const selected = document.querySelectorAll('.phone-selected');
@@ -1632,6 +1644,8 @@ class PlayableGame {
                 pendingAction: null
             };
             this.buildPhoneDialogueNode(npc);
+            this.phoneState.selectedIndex = 0; // Ensure first item is selected
+            this.updatePhoneUI(); // Highlight it immediately
         } else {
             // Disable dialogue state for non-NPCs
             this.dialogueState = null;
@@ -1948,6 +1962,30 @@ class PlayableGame {
             this.currentRoom = 'street';
             this.player.x = 350; // Door on street
             this.player.y = 350;
+        } else if (this.nearDoor === 'enter_diner_kitchen') {
+            if (this.characterState.unlocked_jobs && this.characterState.unlocked_jobs.includes('dishwasher')) {
+                this.currentRoom = 'diner_kitchen';
+                this.player.x = 50;
+                this.player.y = 250;
+            } else {
+                alert('Apenas funcionários autorizados podem entrar na cozinha!');
+            }
+        } else if (this.nearDoor === 'exit_diner_kitchen') {
+            this.currentRoom = 'coffee_shop';
+            this.player.x = 50;
+            this.player.y = 200;
+        } else if (this.nearDoor === 'obj_sink_dishwasher') {
+            if (confirm('Deseja cumprir um turno de trabalho lavando pratos? (4 horas, +R$ 50, -Fome/Higiene)')) {
+                alert('Você trabalhou na lanchonete por 4 horas e ganhou $50!');
+                this.stats.time += 4 * 60;
+                if (this.stats.time >= 24 * 60) this.stats.time -= 24 * 60;
+                this.stats.hunger = Math.max(0, this.stats.hunger - 30);
+                this.stats.hygiene = Math.max(0, this.stats.hygiene - 20);
+                this.stats.money += 50;
+                this.checkTasks('work_shift', 'job_dishwasher', 1);
+                this.checkTasks('stat_reach', 'money', this.stats.money); // Update money task
+                this.updateStatsUI();
+            }
         } else if (this.nearDoor === 'enter_gym') {
             this.currentRoom = 'gym';
             this.player.x = 400;
@@ -2099,7 +2137,7 @@ class PlayableGame {
             this.updateStatsUI();
         } else if (this.nearDoor && this.nearDoor.startsWith('npc_')) {
             // Initiating NPC discussion
-            const npcIdStr = this.nearDoor.split('_')[1];
+            const npcIdStr = this.nearDoor.replace('npc_', '');
             this.openNpcDialogue(npcIdStr);
             return; // Prevent standard Door resets below until dialogue is done
         }
@@ -2119,6 +2157,16 @@ class PlayableGame {
     openNpcDialogue(npcIdStr) {
         const npc = this.npcs.find(n => String(n.id) === npcIdStr);
         if (!npc) return;
+
+        // Restriction for Seu Zé: Only talk if job mission is active or finished
+        if (npc.id === 'npc_ze') {
+            const isMissionActive = this.currentMissionId === 'm03_a_busca_pelo_emprego';
+            const isMissionDone = this.completedMissions.includes('m03_a_busca_pelo_emprego');
+            if (!isMissionActive && !isMissionDone) {
+                npc.chatBubble = { text: "Não posso falar agora, estou muito ocupado.", expiresAt: Date.now() + 3000 };
+                return;
+            }
+        }
 
         this.currentDialoguingNpcId = npc.id;
         npc.isPaused = true;
@@ -2151,19 +2199,11 @@ class PlayableGame {
         const offsetY = canvasRect.top - parentRect.top;
 
         const px = offsetX + npc.x - this.camera.x;
-        // Subindo o menu para flutuar acima do chapéu de forma mais natural (~150px)
-        let py = offsetY + npc.y - 150 - this.camera.y;
+        let py = offsetY + npc.y - 120 - this.camera.y; // Slightly higher for rectangular box
 
-        // If off-screen on the top, move it to the right of the head
-        if (py - 50 < 0) {
-            modal.style.transform = `translate(0%, -100%)`; // Anchor bottom-left
-            modal.style.left = `${px + 40}px`;
-            modal.style.top = `${py + 60}px`;
-        } else {
-            modal.style.transform = `translate(-50%, -100%)`; // Anchor bottom-center
-            modal.style.left = `${px}px`;
-            modal.style.top = `${py}px`;
-        }
+        modal.style.left = `${px}px`;
+        modal.style.top = `${py}px`;
+        modal.style.transform = `translate(-50%, -100%)`;
 
         this.renderNpcFriendshipUI(npc);
         this.buildDialogueNode(npc);
@@ -2204,29 +2244,38 @@ class PlayableGame {
 
             // Story Specific - Seu Zé
             if (npc.id === 'npc_ze') {
-                if (npc.friendship >= 30) {
-                    this.dialogueState.options.push({
-                        icon: '💼', text: "Pedir Emprego", action: () => {
-                            this.checkTasks('dialogue_choice', 'ask_for_job');
-                            alert('Seu Zé: "Você parece esforçado. Pode começar lavando pratos lá no fundo!"');
-                            this.closeNpcDialogue();
-                        }
-                    });
-                } else {
-                    this.dialogueState.options.push({ icon: '💼', text: "Emprego (30% Amizade)", disabled: true, action: () => { } });
+                const hasJob = this.characterState.unlocked_jobs && this.characterState.unlocked_jobs.includes('dishwasher');
+                if (!hasJob) {
+                    if (npc.friendship >= 30) {
+                        this.dialogueState.options.push({
+                            icon: '💼', text: "Pedir Emprego", action: () => {
+                                this.checkTasks('dialogue_choice', 'ask_for_job');
+                                npc.chatBubble = { text: "Você parece esforçado. Pode começar lavando pratos lá no fundo!", expiresAt: Date.now() + 5000 };
+                                this.closeNpcDialogue();
+                            }
+                        });
+                    } else {
+                        this.dialogueState.options.push({ icon: '💼', text: "Emprego (30% Amizade)", disabled: true, action: () => { } });
+                    }
                 }
 
-                // If job is unlocked, show Work shift option
-                if (this.characterState.unlocked_jobs && this.characterState.unlocked_jobs.includes('dishwasher')) {
+                // If job is unlocked, the option should be on the object, not dialogue
+                // Removing Trabalhar Turno from here per user request
+            }
+
+            // Story Specific - Landlord (Seu Jorge)
+            if (npc.id === 'npc_landlord') {
+                const rentTask = this.currentMissionId === 'm04_suor_e_lagrimas' && !this.taskProgress['t3'];
+                if (rentTask) {
                     this.dialogueState.options.push({
-                        icon: '🍽️', text: "Trabalhar Turno", action: () => {
-                            alert('Você trabalhou na lanchonete por 4 horas e ganhou $50!');
-                            this.stats.time += 4 * 60;
-                            this.stats.hunger = Math.max(0, this.stats.hunger - 30);
-                            this.stats.hygiene = Math.max(0, this.stats.hygiene - 20);
-                            this.stats.money += 50;
-                            this.checkTasks('work_shift', 'job_dishwasher', 1);
+                        icon: '💵',
+                        text: this.stats.money >= 200 ? "Pagar Aluguel (R$ 200)" : "Aluguel (Precisa R$ 200)",
+                        disabled: this.stats.money < 200,
+                        action: () => {
+                            this.stats.money -= 200;
                             this.updateStatsUI();
+                            this.checkTasks('pay_rent', 'npc_landlord');
+                            npc.chatBubble = { text: "Finalmente! Achei que ia ter que te despejar. Não se atrase na próxima.", expiresAt: Date.now() + 5000 };
                             this.closeNpcDialogue();
                         }
                     });
@@ -2248,11 +2297,18 @@ class PlayableGame {
             promptContainer.innerText = "Escolha um assunto:";
 
             // Topic Generator
-            const allInterests = ['pets', 'cars', 'humor', 'movies', 'sports', 'music', 'art', 'cooking', 'gaming', 'books', 'tech', 'travel'];
+            const convData = this.npcData ? this.npcData.conversations : null;
+            if (!convData) {
+                console.error("Conversations data not loaded!");
+                this.closeNpcDialogue();
+                return;
+            }
+            const allInterests = Object.keys(convData);
             const emojiMap = {
                 'pets': { i: '🐶', t: 'Pets' }, 'cars': { i: '🏎️', t: 'Carros' }, 'humor': { i: '😂', t: 'Humor' }, 'movies': { i: '🎬', t: 'Filmes' },
                 'sports': { i: '⚽', t: 'Esportes' }, 'music': { i: '🎵', t: 'Música' }, 'art': { i: '🎨', t: 'Arte' }, 'cooking': { i: '🍳', t: 'Culinária' },
-                'gaming': { i: '🎮', t: 'Jogos' }, 'books': { i: '📚', t: 'Livros' }, 'tech': { i: '💻', t: 'Tecnologia' }, 'travel': { i: '✈️', t: 'Viagens' }
+                'gaming': { i: '🎮', t: 'Jogos' }, 'books': { i: '📚', t: 'Livros' }, 'tech': { i: '💻', t: 'Tecnologia' }, 'travel': { i: '✈️', t: 'Viagens' },
+                'money': { i: '💰', t: 'Dinheiro' }, 'rules': { i: '📏', t: 'Regras' }, 'cleaning': { i: '🧹', t: 'Limpeza' }
             };
 
             const correctTopic = npc.interests[Math.floor(Math.random() * npc.interests.length)];
@@ -2265,9 +2321,10 @@ class PlayableGame {
             choices.sort(() => Math.random() - 0.5);
 
             choices.forEach(topic => {
+                const data = emojiMap[topic] || { i: '❓', t: topic };
                 this.dialogueState.options.push({
-                    icon: emojiMap[topic].i,
-                    text: emojiMap[topic].t,
+                    icon: data.i,
+                    text: data.t,
                     action: () => { this.handleNpcChat(npc, topic, npc.interests.includes(topic)); }
                 });
             });
@@ -2333,15 +2390,10 @@ class PlayableGame {
             const li = document.createElement('li');
             li.className = 'smartwatch-option';
             if (opt.disabled) li.classList.add('disabled');
+            if (index === this.dialogueState.selectedIndex) li.classList.add('selected');
 
-            if (index === this.dialogueState.selectedIndex) {
-                li.classList.add('selected');
-            }
-
-            // Wear OS shows icon + text inline
             li.innerText = `${opt.icon} ${opt.text}`;
 
-            // Mouse Over override
             li.addEventListener('mouseenter', () => {
                 if (!opt.disabled) {
                     this.dialogueState.selectedIndex = index;
@@ -2356,8 +2408,8 @@ class PlayableGame {
             container.appendChild(li);
         });
 
-        // Smartwatch circular offset calculation (itemHeight = 20px due to CSS resize)
-        const itemHeight = 24;
+        // Circular offset calculation for narrow menu (itemHeight reduced to 18px)
+        const itemHeight = 18;
         const offset = (this.dialogueState.selectedIndex * itemHeight) + (itemHeight / 2);
         container.style.transform = `translateY(-${offset}px)`;
     }
@@ -2476,6 +2528,11 @@ class PlayableGame {
             npc.friendship = Math.max(0, Math.min(100, npc.friendship));
 
             this.checkTasks('npc_relationship', npc.id, npc.friendship);
+
+            // Hint for Seu Zé Job
+            if (npc.id === 'npc_ze' && npc.friendship >= 30 && this.currentMissionId === 'm03_a_busca_pelo_emprego') {
+                npc.chatBubble.text += " (Ele parece mais amigável, talvez seja hora de pedir a vaga!)";
+            }
             if (npc.friendship >= 50 && !npc.contactAdded) {
                 this.addNpcToContacts();
             }
@@ -2653,22 +2710,11 @@ class PlayableGame {
         if (this.currentDialoguingNpcId) {
             const npc = this.npcs.find(n => n.id === this.currentDialoguingNpcId);
             if (npc) {
-                npc.isPaused = false;
-
-                // Repulsion vector on the X axis to prevent sticking to hitboxes
-                if (this.player.x > npc.x) {
-                    this.player.x += 25; // Push player further right
-                } else {
-                    this.player.x -= 25; // Push player further left
-                }
-                // Zero out any residual movement commands just in case
+                // If the NPC was naturally moving (speed > 0), unpause them. 
+                // If they were fixed (speed === 0), keep them paused/idle.
+                npc.isPaused = npc.speed > 0 ? false : true;
                 this.player.isMoving = false;
-                pushed = true;
             }
-        }
-
-        if (!pushed) {
-            this.player.y += 20; // Fallback bound
         }
 
         this.currentDialoguingNpcId = null;
@@ -2694,10 +2740,6 @@ class PlayableGame {
         interestsContainer.innerHTML = '';
         npc.interests.forEach(interest => {
             const tag = document.createElement('span');
-            tag.style.background = '#444';
-            tag.style.padding = '2px 5px';
-            tag.style.borderRadius = '3px';
-            tag.style.fontSize = '10px';
             tag.innerText = interest;
             interestsContainer.appendChild(tag);
         });
@@ -2862,11 +2904,20 @@ class PlayableGame {
             // Only load data if we didn't already
             if (!this.npcData) await this.loadNpcData();
 
-            // Patch old saves: inject story NPCs if they don't exist in the loaded npcs
+            // Patch/Sync story NPCs: ensure they have the latest room and position
             if (this.npcData && this.npcData.story_npcs) {
                 this.npcData.story_npcs.forEach(storyNpc => {
-                    if (!this.npcs.find(n => n.id === storyNpc.id)) {
+                    let existing = this.npcs.find(n => n.id === storyNpc.id);
+                    if (!existing) {
                         this.npcs.push(JSON.parse(JSON.stringify(storyNpc)));
+                    } else {
+                        // FORCE alignment for important NPCs to match their intended room/position
+                        // This fixes saves that were created before the room relocation
+                        existing.initial_room = storyNpc.initial_room;
+                        existing.currentRoom = storyNpc.initial_room; // Force move to correct room
+                        existing.x = storyNpc.x;
+                        existing.y = storyNpc.y;
+                        existing.isPaused = storyNpc.isPaused;
                     }
                 });
             }
@@ -3011,8 +3062,7 @@ class PlayableGame {
         // Update unread icon
         this.updateUnreadBadges();
 
-        // Invasive alert & automatic phone open as requested by user
-        alert(`Nova Missão: ${title}\n\nMensagem de ${sender}:\n"${text}"`);
+        // Automatic phone open
         this.toggleSmartphoneModal(true);
         this.openPhoneMessagesApp();
         this.openPhoneChat(sender);
@@ -3055,7 +3105,7 @@ class PlayableGame {
             let isComplete = false;
 
             if (task.type === actionType) {
-                if (actionType === 'interact_object' || actionType === 'go_to_location' || actionType === 'dialogue_choice' || actionType === 'buy_item') {
+                if (actionType === 'interact_object' || actionType === 'go_to_location' || actionType === 'dialogue_choice' || actionType === 'buy_item' || actionType === 'pay_rent') {
                     if (task.target === target) isComplete = true;
                 } else if (actionType === 'stat_reach') {
                     // For stat reach, 'target' is the stat name (e.g. 'hunger', 'money')
@@ -3298,6 +3348,7 @@ class PlayableGame {
             contactAdded: false,
             interests: npcInterests,
             isPaused: false,
+            initial_room: 'street',
             x: px,
             y: py, // Walk along street pavement
             speed: 1 + Math.random() * 1.5,
@@ -3330,6 +3381,57 @@ class PlayableGame {
         return false;
     }
 
+    getRoomHitboxes(room) {
+        if (room === 'bedroom') {
+            return [{ x: 180, y: 150, w: 100, h: 30 }, { x: 480, y: 100, w: 120, h: 80 }, { x: 300, y: 150, w: 140, h: 130 }];
+        } else if (room === 'livingroom') {
+            return [{ x: 280, y: 170, w: 240, h: 40 }, { x: 250, y: 320, w: 300, h: 80 }];
+        } else if (room === 'bathroom') {
+            return [{ x: 320, y: 110, w: 160, h: 40 }, { x: 240, y: 120, w: 50, h: 40 }, { x: 600, y: 130, w: 150, h: 50 }];
+        } else if (room === 'kitchen') {
+            return [{ x: 80, y: 160, w: 300, h: 40 }, { x: 450, y: 160, w: 80, h: 40 }, { x: 250, y: 350, w: 160, h: 80 }];
+        } else if (room === 'street') {
+            return [{ x: 0, y: 0, w: 2400, h: 140 }, { x: 600, y: 140, w: 20, h: 20 }];
+        } else if (room === 'diner_kitchen') {
+            return [{ x: 50, y: 120, w: 700, h: 40 }]; // Stainless counters
+        }
+        return [];
+    }
+
+    drawDinerKitchen() {
+        const w = this.mapBounds.width;
+        const h = this.mapBounds.height;
+
+        // Tiles
+        this.ctx.fillStyle = '#f5f5f5';
+        this.ctx.fillRect(0, 0, w, 180);
+        this.ctx.fillStyle = '#e0e0e0';
+        for (let x = 0; x < w; x += 40) {
+            this.ctx.fillRect(x, 175, w, 5);
+        }
+
+        // Floor (Professional non-slip)
+        this.ctx.fillStyle = '#546e7a';
+        this.ctx.fillRect(0, 200, w, h - 200);
+
+        // Industrial Sink (Work Station)
+        this.ctx.fillStyle = '#78909c'; // Stainless steel
+        this.ctx.fillRect(300, 110, 200, 80);
+        this.ctx.fillStyle = '#263238'; // Basin
+        this.ctx.fillRect(320, 120, 160, 40);
+
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText("ESTAÇÃO DE LAVAGEM", 400, 100);
+
+        // Exit back to Shop
+        this.ctx.fillStyle = '#333';
+        this.ctx.fillRect(0, 120, 10, 100);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fillText("LOJA", 30, 180);
+    }
+
     update(dt) {
         let dx = 0;
         let dy = 0;
@@ -3352,43 +3454,16 @@ class PlayableGame {
                 const newY = this.player.y + dy * this.player.speed;
 
                 // Determine hitboxes based on current room
-                let hitboxes = [];
-                if (this.currentRoom === 'bedroom') {
-                    hitboxes = [
-                        { x: 180, y: 150, w: 100, h: 30 }, // Wardrobe base (drawn at y:150ish bottom)
-                        { x: 480, y: 100, w: 120, h: 80 }, // Desk
-                        { x: 300, y: 150, w: 140, h: 130 } // Bed (fixed hitbox to avoid top bypass)
-                    ];
-                } else if (this.currentRoom === 'livingroom') {
-                    hitboxes = [
-                        { x: 280, y: 170, w: 240, h: 40 }, // TV Stand
-                        { x: 250, y: 320, w: 300, h: 80 }  // Sofa
-                    ];
-                } else if (this.currentRoom === 'bathroom') {
-                    hitboxes = [
-                        { x: 320, y: 110, w: 160, h: 40 }, // Sink area
-                        { x: 240, y: 120, w: 50, h: 40 },  // Toilet
-                        { x: 600, y: 130, w: 150, h: 50 }  // Shower base
-                    ];
-                } else if (this.currentRoom === 'kitchen') {
-                    hitboxes = [
-                        { x: 80, y: 160, w: 300, h: 40 }, // Counters/Sink/Stove base
-                        { x: 450, y: 160, w: 80, h: 40 }, // Fridge base
-                        { x: 250, y: 350, w: 160, h: 80 } // Dining table
-                    ];
-                } else if (this.currentRoom === 'street') {
-                    // Prevent walking into buildings
-                    hitboxes = [
-                        { x: 0, y: 0, w: this.canvas.width, h: 140 } // Upper buildings edge (sidewalk is y>140)
-                    ];
-                    // Tree trunk
-                    hitboxes.push({ x: 600, y: 140, w: 20, h: 20 });
+                let hitboxes = this.getRoomHitboxes(this.currentRoom);
 
-                    // Foot-based Collision boxes for NPCs
-                    // This creates a physical 40x20 pixel barrier at the NPC's feet.
-                    // The player cannot physically walk through this, preventing clipping.
+                // Foot-based Collision boxes for NPCs in the CURRENT room
+                // This creates a physical barrier at the NPC's feet.
+                if (this.npcs) {
                     this.npcs.forEach(npc => {
-                        hitboxes.push({ x: npc.x - 20, y: npc.y - 10, w: 40, h: 20 });
+                        const npcRoom = npc.currentRoom || npc.initial_room || 'street';
+                        if (npcRoom === this.currentRoom) {
+                            hitboxes.push({ x: npc.x - 20, y: npc.y - 10, w: 40, h: 20 });
+                        }
                     });
                 }
 
@@ -3570,31 +3645,31 @@ class PlayableGame {
             if (this.player.x < 100) {
                 this.nearDoor = 'exit_street';
             } else if (this.player.y < 380) { // Near the top edge of the sidewalk buildings
-                if (this.player.x >= 200 && this.player.x <= 300) {
-                    this.nearDoor = 'obj_diner';
-                } else if (this.player.x >= 400 && this.player.x <= 500) {
-                    this.nearDoor = 'obj_clothing_store';
-                } else if (this.player.x >= 600 && this.player.x <= 700) {
+                if (this.player.x >= 300 && this.player.x <= 400) {
                     this.nearDoor = 'enter_coffee_shop';
-                } else if (this.player.x >= 800 && this.player.x <= 900) {
+                } else if (this.player.x >= 450 && this.player.x <= 570) {
                     this.nearDoor = 'enter_gym';
-                } else if (this.player.x >= 1000 && this.player.x <= 1100) {
+                } else if (this.player.x >= 700 && this.player.x <= 850) {
+                    this.nearDoor = 'enter_plaza';
+                } else if (this.player.x >= 950 && this.player.x <= 1090) {
                     this.nearDoor = 'enter_grocery';
                 }
-            } else if (this.player.y > 520 && this.player.x > 300 && this.player.x < 600) {
-                // Approximate plaza area
-                this.nearDoor = 'enter_plaza';
             }
         } else if (this.currentRoom === 'coffee_shop') {
-            if (this.player.y > 500 && this.player.x > 300 && this.player.x < 500) {
-                this.nearDoor = 'exit_coffee_shop';
-            }
+            if (this.player.y > 450) this.nearDoor = 'exit_coffee_shop';
+            if (this.player.x < 30 && this.player.y < 250) this.nearDoor = 'enter_diner_kitchen';
+        } else if (this.currentRoom === 'diner_kitchen') {
+            if (this.player.x < 30) this.nearDoor = 'exit_diner_kitchen';
+            if (this.player.x > 280 && this.player.x < 520 && this.player.y < 230) this.nearDoor = 'obj_sink_dishwasher';
+        } else if (this.currentRoom === 'livingroom') {
+            if (this.player.x > this.mapBounds.width - 100) this.nearDoor = 'exit_livingroom';
+            if (this.player.x < 100) this.nearDoor = 'enter_kitchen_apt';
         } else if (this.currentRoom === 'gym') {
             if (this.player.y > 500 && this.player.x > 350 && this.player.x < 450) {
                 this.nearDoor = 'exit_gym';
             }
         } else if (this.currentRoom === 'plaza') {
-            if (this.player.y < 100 && this.player.x > 350 && this.player.x < 450) {
+            if (this.player.y > 500 && this.player.x > 350 && this.player.x < 450) {
                 this.nearDoor = 'exit_plaza';
             }
         } else if (this.currentRoom === 'grocery') {
@@ -3604,13 +3679,14 @@ class PlayableGame {
         }
 
         // Update NPCs and proximity
-        if (this.currentRoom === 'street') {
+        if (this.npcs) {
+            const currentRoomNpcs = this.npcs.filter(npc => (npc.currentRoom || npc.initial_room || 'street') === this.currentRoom);
+
             let closestNpc = null;
             let minDistance = 70; // Interaction radius (X axis)
 
-            // 1. Find the single closest NPC to prompt interaction
-            // Only consider NPCs that are physically sharing the same Y-lane as the player
-            this.npcs.forEach(npc => {
+            // 1. Find the single closest NPC in the CURRENT room to prompt interaction
+            currentRoomNpcs.forEach(npc => {
                 const yDiff = Math.abs(this.player.y - npc.y);
                 const xDiff = Math.abs(this.player.x - npc.x);
 
@@ -3620,8 +3696,8 @@ class PlayableGame {
                 }
             });
 
-            // 2. Handle all NPCs
-            this.npcs.forEach(npc => {
+            // 2. Handle all NPCs in the CURRENT room
+            currentRoomNpcs.forEach(npc => {
                 // Determine if this specific NPC is the one currently engaging the player
                 const isEngaged = (npc === closestNpc);
 
@@ -3683,77 +3759,78 @@ class PlayableGame {
 
                 // Only move and dodge if not engaging the player and not in the modal
                 if (!npc.isPaused && !npc.isNearPlayer) {
+                    const npcRoom = npc.currentRoom || npc.initial_room || 'street';
+                    const isStreet = (npcRoom === 'street');
+                    const roomWidth = isStreet ? 2400 : 800;
 
-                    // Simple Dodging/Collision logic for walking NPCs
-                    // They check if moving forward will hit the player or another NPC
-                    let nextX = npc.x + (npc.direction === 2 ? npc.speed : (npc.direction === 3 ? -npc.speed : 0));
+                    // Unified hitboxes
+                    let currentRoomBoxes = this.getRoomHitboxes(npcRoom);
 
+                    let moveX = (npc.direction === 2 ? npc.speed : (npc.direction === 3 ? -npc.speed : 0));
+                    let nextX = npc.x + moveX;
                     let willCollide = false;
-                    let emergencyStopX = false;
-                    let dodgeDirY = 0;
+                    let dodgeY = 0;
 
-                    // Feature: Directional Field of View Dodging
-
-                    // Check hitting player
-                    let diffXPlayer = this.player.x - npc.x;
-                    let facingPlayer = (npc.direction === 2 && diffXPlayer > 0) || (npc.direction === 3 && diffXPlayer < 0);
-
-                    if (facingPlayer && Math.abs(npc.y - this.player.y) < 30 && Math.abs(diffXPlayer) < 120) {
+                    // 1. Collision with Player
+                    let diffX = this.player.x - npc.x;
+                    let facingPlayer = (npc.direction === 2 && diffX > 0) || (npc.direction === 3 && diffX < 0);
+                    if (facingPlayer && Math.abs(npc.y - this.player.y) < 30 && Math.abs(diffX) < 80) {
                         willCollide = true;
-                        // Determine which way is easiest to step out of the lane
-                        dodgeDirY = npc.y >= this.player.y ? 1 : -1;
-                        if (Math.abs(diffXPlayer) < 50) emergencyStopX = true;
+                        dodgeY = (npc.y >= this.player.y ? 1 : -1) * npc.speed * 1.5;
+                        if (Math.abs(diffX) < 40) moveX = 0; // Emergency stop
                     }
 
-                    // Check hitting other NPCs
-                    if (!willCollide) {
-                        for (let other of this.npcs) {
-                            if (other !== npc) {
-                                let diffXOther = other.x - npc.x;
-                                let facingOther = (npc.direction === 2 && diffXOther > 0) || (npc.direction === 3 && diffXOther < 0);
-                                if (facingOther && Math.abs(npc.y - other.y) < 30 && Math.abs(diffXOther) < 120) {
-                                    willCollide = true;
-                                    dodgeDirY = npc.y >= other.y ? 1 : -1;
-                                    if (Math.abs(diffXOther) < 50) emergencyStopX = true;
-                                    break;
-                                }
-                            }
+                    // 2. Collision with World Objects / Walls
+                    if (!willCollide || moveX !== 0) {
+                        if (this.checkCollisions(npc.x + moveX, npc.y, currentRoomBoxes)) {
+                            willCollide = true;
+                            moveX = 0;
+                            npc.direction = (npc.direction === 2) ? 3 : 2; // Turn around
                         }
                     }
 
-                    if (willCollide) {
-                        // Slide smoothly away from the collision center
-                        npc.y += dodgeDirY * npc.speed * 1.5;
+                    // 3. Room Boundary Checks (Synced with Player Clamping)
+                    // We use 50 instead of 24 for NPCs in rooms to keep them out of transition-door areas
+                    const minXLimit = isStreet ? -100 : 50;
+                    const maxXLimit = isStreet ? roomWidth + 100 : roomWidth - 50;
 
-                        // Keep within Sidewalk Bounds
-                        if (npc.y < 350) npc.y = 350;
-                        if (npc.y > 600) npc.y = 600;
-
-                        // We still let them slowly move forward while dodging, unless they are too close
-                        if (!emergencyStopX) {
-                            npc.x += (npc.direction === 2 ? npc.speed * 0.3 : (npc.direction === 3 ? -npc.speed * 0.3 : 0));
-                        }
-                    } else {
-                        // Free to move normally
-                        if (npc.direction === 2) {
-                            npc.x += npc.speed;
-                            if (npc.x > this.mapBounds.width + 100) {
-                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) {
-                                    npc.x = -100;
-                                } else {
-                                    Object.assign(npc, this.generateNPC(this.npcs));
-                                }
-                            }
-                        } else if (npc.direction === 3) {
-                            npc.x -= npc.speed;
+                    if (npc.x + moveX < minXLimit) {
+                        if (isStreet) {
                             if (npc.x < -100) {
-                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) {
-                                    npc.x = this.mapBounds.width + 100;
-                                } else {
-                                    Object.assign(npc, this.generateNPC(this.npcs));
-                                }
+                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) npc.x = roomWidth + 100;
+                                else Object.assign(npc, this.generateNPC(this.npcs));
                             }
+                        } else {
+                            moveX = 0;
+                            npc.direction = 2; // Turn right
                         }
+                    } else if (npc.x + moveX > maxXLimit) {
+                        if (isStreet) {
+                            if (npc.x > roomWidth + 100) {
+                                if (npc.contactAdded || npc.friendship > 0 || npc.romanced) npc.x = -100;
+                                else Object.assign(npc, this.generateNPC(this.npcs));
+                            }
+                        } else {
+                            moveX = 0;
+                            npc.direction = 3; // Turn left
+                        }
+                    }
+
+                    // Apply Movement
+                    npc.x += moveX;
+                    if (dodgeY !== 0) {
+                        // Check collisions for vertical dodge too!
+                        if (!this.checkCollisions(npc.x, npc.y + dodgeY, currentRoomBoxes)) {
+                            npc.y += dodgeY;
+                        }
+                    }
+
+                    // Final clamping for safety in rooms (Strictly synced with player logic)
+                    if (!isStreet) {
+                        npc.x = Math.max(minXLimit, Math.min(maxXLimit, npc.x));
+                        npc.y = Math.max(220, Math.min(500, npc.y));
+                    } else {
+                        npc.y = Math.max(350, Math.min(600, npc.y));
                     }
                 }
             });
@@ -3890,6 +3967,8 @@ class PlayableGame {
             this.drawStreet();
         } else if (this.currentRoom === 'coffee_shop') {
             this.drawCoffeeShop();
+        } else if (this.currentRoom === 'diner_kitchen') {
+            this.drawDinerKitchen();
         } else if (this.currentRoom === 'gym') {
             this.drawGym();
         } else if (this.currentRoom === 'plaza') {
@@ -4333,6 +4412,13 @@ class PlayableGame {
         this.ctx.font = 'bold 12px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillText("SAIR", w / 2, h - 5);
+
+        // Kitchen Door
+        this.ctx.fillStyle = '#5d4037';
+        this.ctx.fillRect(0, 120, 10, 100);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText("COZINHA", 15, 180);
     }
 
     drawGym() {
@@ -4649,7 +4735,8 @@ class PlayableGame {
 
 
     drawNPC(npc) {
-        const action = (npc.isPaused || npc.isNearPlayer) ? 'idle' : 'walk';
+        const canWalk = npc.speed > 0;
+        const action = (npc.isPaused || npc.isNearPlayer || !canWalk) ? 'idle' : 'walk';
         if (!this.assets[action]) return;
 
         const drawLayer = (img, color, partName) => {
@@ -4972,14 +5059,17 @@ class PlayableGame {
             entity: this.player
         });
 
-        // Only draw NPCs if we are on the street
-        if (this.currentRoom === 'street' && this.npcs) {
+        // Draw NPCs in the same room
+        if (this.npcs) {
             this.npcs.forEach(npc => {
-                entities.push({
-                    type: 'npc',
-                    y: npc.y,
-                    entity: npc
-                });
+                const npcRoom = npc.currentRoom || npc.initial_room || 'street';
+                if (npcRoom === this.currentRoom) {
+                    entities.push({
+                        type: 'npc',
+                        y: npc.y,
+                        entity: npc
+                    });
+                }
             });
         }
 
