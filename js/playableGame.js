@@ -116,6 +116,11 @@ class PlayableGame {
         // Initialize Audio for effects
         this.audioCtx = null;
         this.engineOsc = null;
+
+        // Sink State System (Coffee Shop)
+        this.sinkState = 'dirty'; // 'dirty' or 'clean'
+        this.sinkTimer = 0;
+        this.sinkDuration = 10000; // 10 seconds for testing/gameplay feel
     }
 
     async loadNpcData() {
@@ -2088,13 +2093,22 @@ class PlayableGame {
             this.player.x = 50;
             this.player.y = 200;
         } else if (this.nearDoor === 'obj_sink_dishwasher') {
+            if (this.sinkState === 'clean') {
+                alert('A pia já está limpa! Espere ela sujar novamente para trabalhar.');
+                return;
+            }
             if (confirm('Deseja cumprir um turno de trabalho lavando pratos? (4 horas, +R$ 50, -Fome/Higiene)')) {
-                alert('Você trabalhou na lanchonete por 4 horas e ganhou $50!');
+                alert('Você trabalhou na lanchonete por 4 horas e deixou a pia brilhando! Ganhou $50.');
                 this.stats.time += 4 * 60;
                 if (this.stats.time >= 24 * 60) this.stats.time -= 24 * 60;
                 this.stats.hunger = Math.max(0, this.stats.hunger - 30);
                 this.stats.hygiene = Math.max(0, this.stats.hygiene - 20);
                 this.stats.money += 50;
+
+                // Set sink to clean
+                this.sinkState = 'clean';
+                this.sinkTimer = 0;
+
                 this.checkTasks('work_shift', 'job_dishwasher', 1);
                 this.checkTasks('stat_reach', 'money', this.stats.money); // Update money task
                 this.updateStatsUI();
@@ -3587,10 +3601,46 @@ class PlayableGame {
         this.ctx.fillRect(0, 200, w, h - 200);
 
         // Industrial Sink (Work Station)
-        this.ctx.fillStyle = '#78909c'; // Stainless steel
-        this.ctx.fillRect(300, 110, 200, 80);
-        this.ctx.fillStyle = '#263238'; // Basin
-        this.ctx.fillRect(320, 120, 160, 40);
+        const sinkX = 300;
+        const sinkY = 90;
+        const sinkW = 200;
+        const sinkH = 110;
+        const spriteKey = this.sinkState === 'clean' ? 'coffee_sink_clean' : 'coffee_sink_dirty';
+
+        if (this.envAssets[spriteKey]) {
+            this.ctx.drawImage(this.envAssets[spriteKey], sinkX, sinkY, sinkW, sinkH);
+        } else {
+            this.ctx.fillStyle = this.sinkState === 'clean' ? '#78909c' : '#546e7a'; // Stainless steel vs Grimy
+            this.ctx.fillRect(sinkX, sinkY + 20, sinkW, sinkH - 30);
+            this.ctx.fillStyle = '#263238'; // Basin
+            this.ctx.fillRect(sinkX + 20, sinkY + 30, sinkW - 40, 40);
+        }
+
+        // Progress Bar (Time to get dirty again)
+        if (this.sinkState === 'clean') {
+            const barW = 100;
+            const barH = 10;
+            const barX = sinkX + (sinkW - barW) / 2;
+            const barY = sinkY - 20;
+            const progress = 1 - (this.sinkTimer / this.sinkDuration);
+
+            // Background
+            this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            this.ctx.fillRect(barX, barY, barW, barH);
+
+            // Progress
+            this.ctx.fillStyle = '#00e676'; // Light green
+            this.ctx.fillRect(barX, barY, barW * progress, barH);
+
+            // Border
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(barX, barY, barW, barH);
+
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '10px Arial';
+            this.ctx.fillText("LIMPO", sinkX + sinkW / 2, barY - 5);
+        }
 
         this.ctx.fillStyle = '#fff';
         this.ctx.font = 'bold 12px Arial';
@@ -3608,6 +3658,15 @@ class PlayableGame {
         if (this.cutscene.active) {
             this.updateCutscene(dt);
             return;
+        }
+
+        // Sink Dirtying Logic
+        if (this.sinkState === 'clean') {
+            this.sinkTimer += dt;
+            if (this.sinkTimer >= this.sinkDuration) {
+                this.sinkState = 'dirty';
+                this.sinkTimer = 0;
+            }
         }
 
         let dx = 0;
@@ -4207,6 +4266,8 @@ class PlayableGame {
         // Back Wall
         if (this.envAssets['bedroom_wall']) {
             const pattern = this.ctx.createPattern(this.envAssets['bedroom_wall'], 'repeat');
+            const matrix = new DOMMatrix();
+            pattern.setTransform(matrix.scale(0.25));
             this.ctx.fillStyle = pattern;
             this.ctx.fillRect(0, 0, w, 180);
         } else {
@@ -4221,6 +4282,8 @@ class PlayableGame {
         // Floor
         if (this.envAssets['bedroom_floor']) {
             const pattern = this.ctx.createPattern(this.envAssets['bedroom_floor'], 'repeat');
+            const matrix = new DOMMatrix();
+            pattern.setTransform(matrix.scale(0.25));
             this.ctx.fillStyle = pattern;
             this.ctx.fillRect(0, 200, w, h - 200);
         } else {
@@ -4290,13 +4353,17 @@ class PlayableGame {
             this.ctx.fillRect(235, 40, 40, 130);
         }
 
-        // Desk
+        // Desk & Computer
         this.ctx.fillStyle = '#cd853f';
         this.ctx.fillRect(480, 130, 120, 50);
-        this.ctx.fillStyle = '#111';
-        this.ctx.fillRect(510, 100, 60, 40);
-        this.ctx.fillStyle = '#4169e1';
-        this.ctx.fillRect(515, 105, 50, 30);
+        if (this.envAssets['bedroom_computer']) {
+            this.ctx.drawImage(this.envAssets['bedroom_computer'], 500, 70, 80, 70);
+        } else {
+            this.ctx.fillStyle = '#111';
+            this.ctx.fillRect(510, 100, 60, 40);
+            this.ctx.fillStyle = '#4169e1';
+            this.ctx.fillRect(515, 105, 50, 30);
+        }
         this.ctx.fillStyle = '#333';
         this.ctx.fillRect(530, 140, 20, 10);
         this.ctx.fillStyle = '#ddd';
@@ -4323,6 +4390,8 @@ class PlayableGame {
         // Back Wall
         if (this.envAssets['livingroom_wall']) {
             const pattern = this.ctx.createPattern(this.envAssets['livingroom_wall'], 'repeat');
+            const matrix = new DOMMatrix();
+            pattern.setTransform(matrix.scale(0.25));
             this.ctx.fillStyle = pattern;
             this.ctx.fillRect(0, 0, w, 180);
         } else {
@@ -4337,6 +4406,8 @@ class PlayableGame {
         // Floor (Carpet/Stone)
         if (this.envAssets['livingroom_floor']) {
             const pattern = this.ctx.createPattern(this.envAssets['livingroom_floor'], 'repeat');
+            const matrix = new DOMMatrix();
+            pattern.setTransform(matrix.scale(0.25));
             this.ctx.fillStyle = pattern;
             this.ctx.fillRect(0, 200, w, h - 200);
         } else {
@@ -4401,7 +4472,9 @@ class PlayableGame {
         }
 
         // Sofa
-        if (this.envAssets['livingroom_sofa']) {
+        if (this.envAssets['livingroom_sofa2']) {
+            this.ctx.drawImage(this.envAssets['livingroom_sofa2'], 250, 305, 300, 110);
+        } else if (this.envAssets['livingroom_sofa']) {
             this.ctx.drawImage(this.envAssets['livingroom_sofa'], 250, 310, 300, 100);
         } else {
             this.ctx.fillStyle = '#8b0000';
@@ -4451,25 +4524,37 @@ class PlayableGame {
         this.ctx.strokeRect(350, 40, 100, 70);
 
         // Sink
-        this.ctx.fillStyle = '#f8f8ff';
-        this.ctx.fillRect(330, 140, 140, 60);
-        this.ctx.fillStyle = '#dcdcdc';
-        this.ctx.beginPath();
-        this.ctx.ellipse(400, 160, 40, 20, 0, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.envAssets['bathroom_sink']) {
+            this.ctx.drawImage(this.envAssets['bathroom_sink'], 330, 120, 140, 80);
+        } else {
+            this.ctx.fillStyle = '#f8f8ff';
+            this.ctx.fillRect(330, 140, 140, 60);
+            this.ctx.fillStyle = '#dcdcdc';
+            this.ctx.beginPath();
+            this.ctx.ellipse(400, 160, 40, 20, 0, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
 
         // Toilet
-        this.ctx.fillStyle = '#f8f8ff';
-        this.ctx.fillRect(150, 120, 60, 80);
-        this.ctx.beginPath();
-        this.ctx.ellipse(180, 210, 30, 40, 0, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.envAssets['bathroom_toilet']) {
+            this.ctx.drawImage(this.envAssets['bathroom_toilet'], 140, 110, 80, 100);
+        } else {
+            this.ctx.fillStyle = '#f8f8ff';
+            this.ctx.fillRect(150, 120, 60, 80);
+            this.ctx.beginPath();
+            this.ctx.ellipse(180, 210, 30, 40, 0, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
 
-        // Bath tub
-        this.ctx.fillStyle = '#f8f8ff';
-        this.ctx.fillRect(550, 80, 200, 120);
-        this.ctx.strokeStyle = '#b0c4de';
-        this.ctx.strokeRect(560, 90, 180, 100);
+        // Bath tub / Shower
+        if (this.envAssets['bathroom_shower']) {
+            this.ctx.drawImage(this.envAssets['bathroom_shower'], 550, 60, 200, 140);
+        } else {
+            this.ctx.fillStyle = '#f8f8ff';
+            this.ctx.fillRect(550, 80, 200, 120);
+            this.ctx.strokeStyle = '#b0c4de';
+            this.ctx.strokeRect(560, 90, 180, 100);
+        }
 
         // --- EXIT DOOR ---
         // Door back to bedroom (at the bottom of the screen)
@@ -4574,14 +4659,18 @@ class PlayableGame {
         this.ctx.fillRect(460, 110, 10, 40);
 
         // Dining Table
-        this.ctx.fillStyle = '#deb887'; // Burlywood table
-        this.ctx.fillRect(250, 350, 160, 80);
-        // Chairs
-        this.ctx.fillStyle = '#cd853f';
-        this.ctx.fillRect(270, 320, 30, 30);
-        this.ctx.fillRect(360, 320, 30, 30);
-        this.ctx.fillRect(270, 430, 30, 30);
-        this.ctx.fillRect(360, 430, 30, 30);
+        if (this.envAssets['kitchen_table']) {
+            this.ctx.drawImage(this.envAssets['kitchen_table'], 240, 310, 180, 130);
+        } else {
+            this.ctx.fillStyle = '#deb887'; // Burlywood table
+            this.ctx.fillRect(250, 350, 160, 80);
+            // Chairs
+            this.ctx.fillStyle = '#cd853f';
+            this.ctx.fillRect(270, 320, 30, 30);
+            this.ctx.fillRect(360, 320, 30, 30);
+            this.ctx.fillRect(270, 430, 30, 30);
+            this.ctx.fillRect(360, 430, 30, 30);
+        }
 
         // --- TRANSITION ZONE (RIGHT END) ---
         // We draw an invisible or explicit 'door' at the right
@@ -4606,30 +4695,40 @@ class PlayableGame {
         this.ctx.fillRect(0, 200, w, h - 200);
 
         // Counter
-        this.ctx.fillStyle = '#5d4037';
-        this.ctx.fillRect(100, 140, 250, 60);
-        this.ctx.fillStyle = '#8d6e63';
-        this.ctx.fillRect(100, 140, 250, 10);
+        if (this.envAssets['coffee_counter']) {
+            this.ctx.drawImage(this.envAssets['coffee_counter'], 80, 80, 300, 130);
+        } else {
+            this.ctx.fillStyle = '#5d4037';
+            this.ctx.fillRect(100, 140, 250, 60);
+            this.ctx.fillStyle = '#8d6e63';
+            this.ctx.fillRect(100, 140, 250, 10);
+        }
 
         // Machines
-        this.ctx.fillStyle = '#bdbdbd';
-        this.ctx.fillRect(150, 100, 60, 40);
-        this.ctx.fillStyle = '#212121';
-        this.ctx.fillRect(160, 110, 10, 10);
-        // Glasses
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(230, 120, 10, 20);
-        this.ctx.fillRect(250, 120, 10, 20);
+        if (!this.envAssets['coffee_counter']) {
+            this.ctx.fillStyle = '#bdbdbd';
+            this.ctx.fillRect(150, 100, 60, 40);
+            this.ctx.fillStyle = '#212121';
+            this.ctx.fillRect(160, 110, 10, 10);
+            // Glasses
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillRect(230, 120, 10, 20);
+            this.ctx.fillRect(250, 120, 10, 20);
+        }
 
         // Tables
         const drawTable = (x, y) => {
-            this.ctx.fillStyle = '#fff'; // Table covering
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, 40, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.fillStyle = '#8d6e63'; // Chair
-            this.ctx.fillRect(x - 50, y - 10, 20, 20);
-            this.ctx.fillRect(x + 30, y - 10, 20, 20);
+            if (this.envAssets['coffee_table']) {
+                this.ctx.drawImage(this.envAssets['coffee_table'], x - 60, y - 60, 120, 120);
+            } else {
+                this.ctx.fillStyle = '#fff'; // Table covering
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 40, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#8d6e63'; // Chair
+                this.ctx.fillRect(x - 50, y - 10, 20, 20);
+                this.ctx.fillRect(x + 30, y - 10, 20, 20);
+            }
         };
         drawTable(500, 300);
         drawTable(650, 350);
@@ -5360,6 +5459,18 @@ class PlayableGame {
         });
     }
 
+    drawShadow(x, y, width) {
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        this.ctx.beginPath();
+        // Alinhamento com a câmera
+        const cx = x - this.camera.x;
+        const cy = y - this.camera.y;
+        this.ctx.ellipse(cx, cy, width / 2, width / 6, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+    }
+
     drawEntities() {
         // Collect all entities in the scene that need depth sorting
         let entities = [];
@@ -5405,10 +5516,16 @@ class PlayableGame {
 
         entities.forEach(item => {
             if (item.type === 'player') {
-                if (this.player.visible !== false) this.drawCharacter();
+                if (this.player.visible !== false) {
+                    this.drawShadow(this.player.x, this.player.y, 40);
+                    this.drawCharacter();
+                }
             } else if (item.type === 'npc') {
+                this.drawShadow(item.entity.x, item.entity.y, 40);
                 this.drawNPC(item.entity);
             } else if (item.type === 'bus') {
+                // Sombra centralizada na base do ônibus
+                this.drawShadow(this.bus.x, this.bus.y + (this.bus.yOffset || 0), 380);
                 this.drawBus();
             }
         });
@@ -5540,7 +5657,17 @@ class PlayableGame {
             'livingroom_wall': 'assets/environments/livingroom_bg_wall.png',
             'livingroom_floor': 'assets/environments/livingroom_bg_floor.png',
             'livingroom_sofa': 'assets/props/livingroom_prop_sofa.png',
-            'livingroom_tv': 'assets/props/livingroom_prop_tv.png'
+            'livingroom_sofa2': 'assets/props/livingroom_prop_sofa2.png',
+            'livingroom_tv': 'assets/props/livingroom_prop_tv.png',
+            'bathroom_shower': 'assets/props/bathroom_prop_shower.png',
+            'bathroom_sink': 'assets/props/bathroom_prop_sink.png',
+            'bathroom_toilet': 'assets/props/bathroom_prop_toilet.png',
+            'bedroom_computer': 'assets/props/bedroom_prop_computer.png',
+            'kitchen_table': 'assets/props/kitchen_prop_table.png',
+            'coffee_counter': 'assets/props/coffee_prop_counter.png',
+            'coffee_table': 'assets/props/coffee_prop_table.png',
+            'coffee_sink_clean': 'assets/props/coffee_prop_kitchen_sink_clean.png',
+            'coffee_sink_dirty': 'assets/props/coffee_prop_kitchen_sink_dirty.png'
         };
 
         const loadPromises = Object.entries(assetsToLoad).map(([key, src]) => {
