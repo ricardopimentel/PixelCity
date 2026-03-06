@@ -99,6 +99,10 @@ class PlayableGame {
         this.initFaceMenu();
         this.initModals();
 
+        // Debug: Mouse position tracker
+        this.mousePos = { x: 0, y: 0 };
+        this.scale = 1; // Base scale for coordinate calculation
+
         // Door interaction button event listener
         const btnDoorGo = document.getElementById('btn-door-go');
         if (btnDoorGo) {
@@ -108,6 +112,10 @@ class PlayableGame {
         // Handle Window Resizing
         window.addEventListener('resize', () => this.resizeCanvas());
         this.resizeCanvas(); // Initial sizing
+
+        // Initialize Audio for effects
+        this.audioCtx = null;
+        this.engineOsc = null;
     }
 
     async loadNpcData() {
@@ -1035,6 +1043,15 @@ class PlayableGame {
                 }
             }
         });
+
+        // Mouse movement tracking for debug
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseCanvasX = (e.clientX - rect.left);
+            const mouseCanvasY = (e.clientY - rect.top);
+            this.mousePos.x = Math.round(mouseCanvasX / this.scale + this.camera.x);
+            this.mousePos.y = Math.round(mouseCanvasY / this.scale + this.camera.y);
+        });
     }
 
     initFaceMenu() {
@@ -1204,19 +1221,34 @@ class PlayableGame {
     }
 
     updateCutscene(dt) {
-        this.cutscene.timer += dt || 1;
+        if (!this.cutscene.active) return;
+        this.cutscene.timer += dt || 16; // Use standard frame time if dt is missing
 
-        if (this.cutscene.phase === 'bus_leaving') {
+        if (this.cutscene.phase === 'bus_starting') {
+            // Fase de motor ligando: balança levemente o ônibus
+            this.bus.yOffset = Math.sin(this.cutscene.timer * 0.05) * 2;
+
+            // Após 2 segundos (2000ms), começa a andar
+            if (this.cutscene.timer > 2000) {
+                this.cutscene.phase = 'bus_leaving';
+                this.cutscene.timer = 0;
+                console.log("Bus starting to move...");
+                this.playBusSound('running');
+            }
+        }
+        else if (this.cutscene.phase === 'bus_leaving') {
+            this.bus.yOffset = Math.sin(this.cutscene.timer * 0.02) * 1; // Balanço suave de movimento
+
             // Move da esquerda para a direita
             this.bus.x += this.bus.speed;
 
             // Quando o ônibus sai da tela (considerando o tamanho dele)
-            if (this.bus.x > this.player.x + 800) {
+            if (this.bus.x > this.player.x + 1000) {
                 this.cutscene.active = false;
                 this.cutscene.phase = 'none';
                 this.bus.visible = false;
-                this.bus = null; // Delete from memory/stop updating
-                console.log("Cutscene finished: character revealed and bus removed.");
+                console.log("Cutscene finished: character revealed.");
+                this.playBusSound('stop');
 
                 // Trigger first mission
                 this.checkMissionTrigger('game_start');
@@ -2041,7 +2073,7 @@ class PlayableGame {
             this.checkTasks('go_to_location', 'coffee_shop');
         } else if (this.nearDoor === 'exit_coffee_shop') {
             this.currentRoom = 'street';
-            this.player.x = 350; // Door on street
+            this.player.x = 750; // Door on street
             this.player.y = 350;
         } else if (this.nearDoor === 'enter_diner_kitchen') {
             if (this.characterState.unlocked_jobs && this.characterState.unlocked_jobs.includes('dishwasher')) {
@@ -2074,7 +2106,7 @@ class PlayableGame {
             this.checkTasks('go_to_location', 'gym');
         } else if (this.nearDoor === 'exit_gym') {
             this.currentRoom = 'street';
-            this.player.x = 510;
+            this.player.x = 1280;
             this.player.y = 350;
         } else if (this.nearDoor === 'enter_plaza') {
             this.currentRoom = 'plaza';
@@ -2083,7 +2115,7 @@ class PlayableGame {
             this.checkTasks('go_to_location', 'plaza');
         } else if (this.nearDoor === 'exit_plaza') {
             this.currentRoom = 'street';
-            this.player.x = 775;
+            this.player.x = 1825;
             this.player.y = 350;
         } else if (this.nearDoor === 'enter_grocery') {
             this.currentRoom = 'grocery';
@@ -2092,7 +2124,7 @@ class PlayableGame {
             this.checkTasks('go_to_location', 'grocery');
         } else if (this.nearDoor === 'exit_grocery') {
             this.currentRoom = 'street';
-            this.player.x = 1020;
+            this.player.x = 2380;
             this.player.y = 350;
         } else if (this.nearDoor.startsWith('obj_')) {
             const objMsg = {
@@ -2962,30 +2994,35 @@ class PlayableGame {
 
     async start(isLoaded = false) {
         if (!isLoaded) {
-            // Spawn no final da rua (na rua, não na calçada)
-            this.player.x = 2300;
-            this.player.y = 480; // Road height
-            this.player.direction = 2; // Olhando pra Direita
-            this.player.visible = true;
+            // Spawn na localização solicitada pelo usuário (coordenada dos pés)
+            this.player.x = 1544;
+            this.player.y = 245;
+            this.player.direction = 0; // Olhando pra Frente
+            this.player.visible = false; // Começa invisível para evitar flash
 
-            // Re-initialize bus object if it was deleted in previous session
-            if (!this.bus) {
-                this.bus = { x: 0, y: 0, speed: 5, image: null, visible: false };
+            // Re-initialize bus object if it was deleted/missing
+            if (!this.bus || !this.bus.image) {
+                this.bus = { x: 0, y: 0, speed: 2, image: null, visible: false };
                 this.loadBusAsset();
             }
 
-            // Posiciona o ônibus EXATAMENTE sobre o jogador, mas com Y levemente maior para ficar na frente
+            // Posiciona o ônibus EXATAMENTE sobre o jogador
             this.bus.x = this.player.x;
-            this.bus.y = this.player.y + 10; // Levemente à frente para o depth search
-            this.bus.visible = true;
-            this.cutscene.active = true;
-            this.cutscene.phase = 'bus_leaving';
-            this.cutscene.timer = 0;
-
+            this.bus.y = this.player.y + 20;
+            this.bus.visible = true; // Inicia Visível
+            // O ônibus e a cutscene agora são disparados pelo initMissions -> startCutscene
+            // para evitar o bug de 'reset' durante o carregamento inicial.
             await this.loadNpcData();
 
             this.npcs = [];
             this.npcsSpawned = false;
+
+            // Sync story NPCs immediately for new games too
+            if (this.npcData && this.npcData.story_npcs) {
+                this.npcData.story_npcs.forEach(storyNpc => {
+                    this.npcs.push(JSON.parse(JSON.stringify(storyNpc)));
+                });
+            }
         } else {
             // Only load data if we didn't already
             if (!this.npcData) await this.loadNpcData();
@@ -3085,7 +3122,7 @@ class PlayableGame {
                         "id": "m05_banho_de_loja",
                         "title": "Deixando o Passado pra Trás",
                         "trigger": { "type": "mission_completed", "target": "m04_suor_e_lagrimas" },
-                        "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festinha aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
+                        "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festa de inauguração de um novo clube aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
                         "tasks": [
                             { "id": "t1", "type": "go_to_location", "target": "clothing_store", "description": "Vá até a Loja de Roupas." },
                             { "id": "t2", "type": "buy_item", "target": "item_category_shirt", "description": "Compre e equipe qualquer camisa nova." },
@@ -3112,16 +3149,22 @@ class PlayableGame {
 
     startCutscene() {
         this.cutscene.active = true;
-        this.cutscene.phase = 'bus_leaving';
+        this.cutscene.phase = 'bus_starting'; // Inicia parado vibrando
         this.cutscene.timer = 0;
 
-        // O ônibus começa exatamente onde o player está (escondendo-o)
-        this.bus.x = this.player.x;
-        this.bus.y = this.player.y + 10; // Depth sorting trick
-        this.bus.visible = true;
-        this.bus.speed = 2; // Reduzido de 8 para um movimento mais suave e devagar
+        // Revela o personagem POR BAIXO do ônibus
+        this.player.direction = 0;
+        this.player.visible = true;
 
-        console.log("Cutscene started: Bus revealing character...");
+        // Garantir posição inicial do ônibus
+        this.bus.x = this.player.x;
+        this.bus.y = this.player.y + 20;
+        this.bus.visible = true;
+        this.bus.speed = 2.5;
+        this.bus.wheelRotation = 0;
+
+        console.log("Cutscene started: Engine starting up...");
+        this.playBusSound('startup');
     }
 
     startMission(missionId) {
@@ -3134,9 +3177,9 @@ class PlayableGame {
             this.taskProgress[t.id] = false;
         });
 
-        // Find mentor NPC to use actual name as sender, fallback to "Mentor"
+        // Find mentor NPC - Search by ID 'mentor' or Name 'Lucas'
         const mentorNpc = this.npcs.find(n => n.id === 'mentor' || n.name === 'Lucas');
-        const senderName = mentorNpc ? mentorNpc.name : "Mentor";
+        const senderName = mentorNpc ? mentorNpc.name : "Lucas"; // Default to Lucas as name
 
         // Send mentor message via smartphone
         this.receiveSmartphoneMessage(senderName, mission.title, mission.mentor_message, mission);
@@ -3520,7 +3563,7 @@ class PlayableGame {
         } else if (room === 'kitchen') {
             return [{ x: 80, y: 160, w: 300, h: 40 }, { x: 450, y: 160, w: 80, h: 40 }, { x: 250, y: 350, w: 160, h: 80 }];
         } else if (room === 'street') {
-            return [{ x: 0, y: 0, w: 2400, h: 140 }, { x: 600, y: 140, w: 20, h: 20 }];
+            return [{ x: 0, y: -400, w: 2800, h: 540 }];
         } else if (room === 'diner_kitchen') {
             return [{ x: 50, y: 120, w: 700, h: 40 }]; // Stainless counters
         }
@@ -3628,7 +3671,7 @@ class PlayableGame {
 
         // Set map boundaries based on room
         if (this.currentRoom === 'street') {
-            this.mapBounds.width = 2400;
+            this.mapBounds.width = 2800;
         } else {
             this.mapBounds.width = 800; // standard room width
         }
@@ -3642,6 +3685,9 @@ class PlayableGame {
         let camY = this.player.y - this.canvas.height / 2;
 
         // Ensure we don't show areas outside the map boundaries
+        // Upper bound - allow scrolling higher up in street to see tall buildings
+        const minY = this.currentRoom === 'street' ? -250 : 0;
+
         if (this.canvas.width >= this.mapBounds.width) {
             camX = -(this.canvas.width - this.mapBounds.width) / 2;
         } else {
@@ -3651,7 +3697,7 @@ class PlayableGame {
         if (this.canvas.height >= this.mapBounds.height) {
             camY = -(this.canvas.height - this.mapBounds.height) / 2;
         } else {
-            camY = Math.max(0, Math.min(camY, this.mapBounds.height - this.canvas.height));
+            camY = Math.max(minY, Math.min(camY, this.mapBounds.height - this.canvas.height));
         }
 
         this.camera.x = camX;
@@ -3785,16 +3831,16 @@ class PlayableGame {
             }
         } else if (this.currentRoom === 'street') {
             // Exit Street to Living Room on the far left
-            if (this.player.x < 100) {
+            if (this.player.x < 150) {
                 this.nearDoor = 'exit_street';
             } else if (this.player.y < 380) { // Near the top edge of the sidewalk buildings
-                if (this.player.x >= 300 && this.player.x <= 400) {
+                if (this.player.x >= 650 && this.player.x <= 850) {
                     this.nearDoor = 'enter_coffee_shop';
-                } else if (this.player.x >= 450 && this.player.x <= 570) {
+                } else if (this.player.x >= 1150 && this.player.x <= 1400) {
                     this.nearDoor = 'enter_gym';
-                } else if (this.player.x >= 700 && this.player.x <= 850) {
+                } else if (this.player.x >= 1700 && this.player.x <= 1950) {
                     this.nearDoor = 'enter_plaza';
-                } else if (this.player.x >= 950 && this.player.x <= 1090) {
+                } else if (this.player.x >= 2250 && this.player.x <= 2500) {
                     this.nearDoor = 'enter_grocery';
                 }
             }
@@ -4766,29 +4812,71 @@ class PlayableGame {
         const w = this.mapBounds.width;
         const h = this.mapBounds.height;
 
-        // Sky
-        if (this.envAssets['street_sky']) {
-            const pattern = this.ctx.createPattern(this.envAssets['street_sky'], 'repeat-x');
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 0, w, 140);
-        } else {
-            this.ctx.fillStyle = '#87CEEB';
-            this.ctx.fillRect(0, 0, w, 140);
+        const screenWidth = this.canvas.width / this.scale;
+
+        if (!this.loggedBg) {
+            console.log("Bg Far Present?", !!this.envAssets['street_bg_far']);
+            console.log("Bg Mid Present?", !!this.envAssets['street_bg_mid']);
+            console.log("Bg Sky Present?", !!this.envAssets['street_sky']);
+            this.loggedBg = true;
         }
 
-        // Buildings background (Keep simple for now, can add a sprite later)
-        this.ctx.fillStyle = '#78909c';
-        this.ctx.fillRect(0, 40, w, 100);
-        this.ctx.fillStyle = '#546e7a';
-        for (let i = 50; i < w; i += 150) {
-            this.ctx.fillRect(i, 60, 80, 80);
+        // 1. ALWAYS draw the sky base to prevent black/grey voids
+        this.ctx.fillStyle = '#87CEEB';
+        this.ctx.fillRect(-1000, -600, w + 2000, 800);
+
+        // 2. Far Background (City/Skyline) - Slow Parallax
+        if (this.envAssets['street_bg_far'] && this.envAssets['street_bg_far'].width > 0) {
+            const img = this.envAssets['street_bg_far'];
+            const scale = 540 / img.height;
+            const scaledW = img.width * scale;
+            // Para fazer mover mais devagar que a rua, adicionamos uma parte da câmera de volta.
+            // 0.5 = move na metade da velocidade da rua.
+            const parallaxOffset = this.camera.x * 0.5;
+
+            for (let x = -1000; x < w + 2000; x += scaledW) {
+                // Add 1px to width to fix subpixel gaps
+                this.ctx.drawImage(img, x + parallaxOffset, -400, scaledW + 1, 540);
+            }
+        } else if (this.envAssets['street_sky'] && this.envAssets['street_sky'].width > 0) {
+            const pattern = this.ctx.createPattern(this.envAssets['street_sky'], 'repeat-x');
+            this.ctx.fillStyle = pattern;
+            this.ctx.fillRect(0, -400, w, 540);
         }
+
+        // 3. Mid Background (Trees/Vegetation) - No Parallax (Moves exactly like buildings)
+        if (this.envAssets['street_bg_mid'] && this.envAssets['street_bg_mid'].width > 0) {
+            const img = this.envAssets['street_bg_mid'];
+            const targetHeight = 160;
+            const scale = targetHeight / img.height;
+            const scaledW = img.width * scale;
+
+            // Sem offset = a imagem fica na rua e se move exatamente igual aos prédios (1:1)
+            const parallaxOffset = 0;
+            const yOffset = 140 - targetHeight; // Bottom aligns exactly with the sidewalk at Y=140
+
+            for (let x = -1000; x < w + 2000; x += scaledW) {
+                this.ctx.drawImage(img, x + parallaxOffset, yOffset, scaledW + 1, targetHeight);
+            }
+        } else {
+            // Original building fallback if image completely fails
+            this.ctx.fillStyle = '#78909c';
+            this.ctx.fillRect(0, -200, w, 340);
+            this.ctx.fillStyle = '#546e7a';
+            for (let i = 50; i < w; i += 300) {
+                this.ctx.fillRect(i, -120, 200, 260);
+            }
+        }
+
 
         // Sidewalk
         if (this.envAssets['street_pavement']) {
-            const pattern = this.ctx.createPattern(this.envAssets['street_pavement'], 'repeat-x');
+            const pattern = this.ctx.createPattern(this.envAssets['street_pavement'], 'repeat');
+            if (typeof DOMMatrix !== 'undefined') {
+                pattern.setTransform(new DOMMatrix().scale(0.0833, 0.0833));
+            }
             this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 140, w, 60);
+            this.ctx.fillRect(0, 140, w, 110);
         } else {
             this.ctx.fillStyle = '#e0e0e0';
             this.ctx.fillRect(0, 140, w, 60);
@@ -4800,7 +4888,11 @@ class PlayableGame {
 
         // Road
         this.ctx.fillStyle = '#424242';
-        this.ctx.fillRect(0, 200, w, h - 200);
+        this.ctx.fillRect(0, 250, w, h - 250);
+
+        // Curb (Meio-fio)
+        this.ctx.fillStyle = '#616161'; // Slightly lighter than #424242
+        this.ctx.fillRect(0, 240, w, 10);
 
         // Road lines
         this.ctx.fillStyle = '#ffeb3b';
@@ -4808,41 +4900,58 @@ class PlayableGame {
             this.ctx.fillRect(i, 350, 40, 10);
         }
 
+        // --- WALL BEHIND BUILDINGS ---
+        // Draw a simple canvas wall spanning the whole width
+        const wallHeight = 40;
+        const wallY = 140 - wallHeight;
+
+        // Wall body
+        this.ctx.fillStyle = '#bdbdbd'; // Light gray
+        this.ctx.fillRect(-1000, wallY, w + 2000, wallHeight);
+
+        // Top border
+        this.ctx.fillStyle = '#757575'; // Dark gray
+        this.ctx.fillRect(-1000, wallY, w + 2000, 6);
+
         // --- STREET DECOR ---
 
         // Tree
         if (this.envAssets['street_tree']) {
-            this.ctx.drawImage(this.envAssets['street_tree'], 600, 40, 80, 120);
+            this.ctx.drawImage(this.envAssets['street_tree'], 450, -120, 200, 320);
+            this.ctx.drawImage(this.envAssets['street_tree'], 1450, -120, 200, 320);
+            this.ctx.drawImage(this.envAssets['street_tree'], 2600, -120, 200, 320);
         } else {
             this.ctx.fillStyle = '#8b4513';
-            this.ctx.fillRect(600, 80, 20, 80);
+            this.ctx.fillRect(450, -60, 60, 200);
             this.ctx.fillStyle = '#228b22';
             this.ctx.beginPath();
-            this.ctx.arc(610, 60, 40, 0, Math.PI * 2);
-            this.ctx.arc(580, 80, 30, 0, Math.PI * 2);
-            this.ctx.arc(640, 80, 30, 0, Math.PI * 2);
+            this.ctx.arc(480, -160, 120, 0, Math.PI * 2);
+            this.ctx.arc(380, -60, 100, 0, Math.PI * 2);
+            this.ctx.arc(580, -60, 100, 0, Math.PI * 2);
             this.ctx.fill();
         }
 
         // Street Lamp
         if (this.envAssets['street_lamp']) {
-            this.ctx.drawImage(this.envAssets['street_lamp'], 200, 50, 30, 120);
+            this.ctx.drawImage(this.envAssets['street_lamp'], 345, 60, 90, 140);
+            this.ctx.drawImage(this.envAssets['street_lamp'], 1045, 60, 90, 140);
+            this.ctx.drawImage(this.envAssets['street_lamp'], 2045, 60, 90, 140);
         } else {
             this.ctx.fillStyle = '#555';
-            this.ctx.fillRect(200, 60, 5, 100);
-            this.ctx.fillRect(190, 50, 25, 10);
+            this.ctx.fillRect(380, -100, 15, 240);
+            this.ctx.fillRect(350, -120, 60, 20);
             this.ctx.fillStyle = '#ffffbb';
             this.ctx.beginPath();
-            this.ctx.arc(202, 65, 8, 0, Math.PI * 2);
+            this.ctx.arc(385, -90, 24, 0, Math.PI * 2);
             this.ctx.fill();
         }
 
         // --- TRANSITION ZONE (LEFT END) - APARTMENT BUILDING ---
         const bX = 0;
-        const bWidth = 140;
+        const bWidth = 420;
 
         if (this.envAssets['street_apt']) {
-            this.ctx.drawImage(this.envAssets['street_apt'], bX, 20, bWidth, 180);
+            this.ctx.drawImage(this.envAssets['street_apt'], bX, -340, bWidth, 540);
         } else {
             // Building main body
             this.ctx.fillStyle = '#90a4ae';
@@ -4879,56 +4988,60 @@ class PlayableGame {
 
         // Coffee Shop
         if (this.envAssets['street_coffee']) {
-            this.ctx.drawImage(this.envAssets['street_coffee'], 300, 80, 100, 120);
+            this.ctx.drawImage(this.envAssets['street_coffee'], 600, -160, 300, 360);
         } else {
             this.ctx.fillStyle = '#6d4c41';
-            this.ctx.fillRect(300, 80, 100, 120);
+            this.ctx.fillRect(600, -160, 300, 360);
             this.ctx.fillStyle = '#d7ccc8'; // Light Brown window
-            this.ctx.fillRect(310, 120, 80, 50);
+            this.ctx.fillRect(620, -40, 260, 160);
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 12px Arial';
+            this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText("CAFETERIA", 350, 100);
+            this.ctx.fillText("CAFETERIA", 750, -80);
         }
 
         // Gym
         if (this.envAssets['street_gym']) {
-            this.ctx.drawImage(this.envAssets['street_gym'], 450, 60, 120, 140);
+            this.ctx.drawImage(this.envAssets['street_gym'], 1100, -220, 360, 420);
         } else {
             this.ctx.fillStyle = '#455a64';
-            this.ctx.fillRect(450, 60, 120, 140);
+            this.ctx.fillRect(1100, -220, 360, 420);
             this.ctx.fillStyle = '#b0bec5'; // Light grey window
-            this.ctx.fillRect(460, 100, 100, 60);
+            this.ctx.fillRect(1140, -80, 280, 180);
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 12px Arial';
+            this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText("ACADEMIA", 510, 90);
+            this.ctx.fillText("ACADEMIA", 1280, -120);
         }
 
         // Plaza (Park area)
-        this.ctx.fillStyle = '#81c784'; // Light green grass
-        this.ctx.fillRect(700, 120, 150, 80);
-        this.ctx.fillStyle = '#388e3c'; // Dark green bush
-        this.ctx.beginPath();
-        this.ctx.arc(740, 140, 20, 0, Math.PI * 2);
-        this.ctx.arc(770, 130, 25, 0, Math.PI * 2);
-        this.ctx.arc(800, 140, 20, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.envAssets['street_plaza']) {
+            this.ctx.drawImage(this.envAssets['street_plaza'], 1600, -170, 450, 420);
+        } else {
+            this.ctx.fillStyle = '#81c784'; // Light green grass
+            this.ctx.fillRect(1600, -40, 450, 240);
+            this.ctx.fillStyle = '#388e3c'; // Dark green bush
+            this.ctx.beginPath();
+            this.ctx.arc(1720, 40, 60, 0, Math.PI * 2);
+            this.ctx.arc(1820, 10, 80, 0, Math.PI * 2);
+            this.ctx.arc(1920, 40, 60, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
         this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
+        this.ctx.font = 'bold 32px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText("PRAÇA", 775, 110);
+        this.ctx.fillText("PRAÇA", 1825, -60);
 
         // Grocery (Mercadinho)
         if (this.envAssets['street_grocery']) {
-            this.ctx.drawImage(this.envAssets['street_grocery'], 950, 80, 120, 120);
+            this.ctx.drawImage(this.envAssets['street_grocery'], 2200, -160, 360, 360);
         } else {
             this.ctx.fillStyle = '#388e3c';
-            this.ctx.fillRect(950, 80, 120, 120);
+            this.ctx.fillRect(2200, -160, 360, 360);
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 12px Arial';
+            this.ctx.font = 'bold 32px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText("MERCADO", 1010, 100);
+            this.ctx.fillText("MERCADO", 2380, -80);
         }
     }
 
@@ -5313,6 +5426,21 @@ class PlayableGame {
         this.drawEnvironment();
         this.drawEntities(); // Replaces drawCharacter() to handle depth sorting of all entities
 
+        // Debug: Mouse coordinates overlay
+        if (this.mousePos) {
+            this.ctx.save();
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform for screen space drawing
+
+            // Desenha um pouco mais pra baixo (Y=100) para não ficar atrás da HUD do topo
+            const drawY = 100;
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.fillRect(10, drawY, 120, 25);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.fillText(`X: ${this.mousePos.x} Y: ${this.mousePos.y}`, 20, drawY + 18);
+            this.ctx.restore();
+        }
+
         requestAnimationFrame((ts) => this.loop(ts));
     }
 
@@ -5320,31 +5448,76 @@ class PlayableGame {
         if (!this.bus || !this.bus.image || !this.bus.visible) return;
 
         const dx = this.bus.x - this.camera.x;
-        const dy = this.bus.y - this.camera.y;
+        const dy = this.bus.y + (this.bus.yOffset || 0) - this.camera.y;
 
-        // Bus dimensions
-        const busWidth = 320;
-        const busHeight = 160;
+        const busWidth = 360;
+        const busHeight = 180;
 
         this.ctx.save();
-        // Move para a posição central do ônibus onde ele será desenhado
         this.ctx.translate(dx, dy);
-        // O asset original olha para a ESQUERDA. Para olhar para a DIREITA (L->R), invertemos o scaleX.
-        this.ctx.scale(-1, 1);
+        this.ctx.scale(-1, 1); // Inverter horizontalmente
 
+        // Draw BUS Body
         this.ctx.drawImage(this.bus.image, -busWidth / 2, -busHeight, busWidth, busHeight);
+
+        // Draw WHEELS (Calculated rotation)
+        const wheelSize = 52;
+        const rotation = (this.cutscene.phase === 'bus_leaving') ? (-this.bus.x * 0.05) : 0;
+
+        const drawWheel = (wheelX, wheelY) => {
+            if (!this.bus.wheelImage) {
+                // Fallback se a imagem não carregar
+                this.ctx.save();
+                this.ctx.translate(wheelX, wheelY);
+                this.ctx.rotate(rotation);
+                this.ctx.fillStyle = '#212121';
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, wheelSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.restore();
+                return;
+            }
+
+            this.ctx.save();
+            this.ctx.translate(wheelX, wheelY);
+            this.ctx.rotate(rotation);
+
+            // Draw custom tire sprite
+            this.ctx.drawImage(this.bus.wheelImage, -wheelSize / 2, -wheelSize / 2, wheelSize, wheelSize);
+
+            this.ctx.restore();
+        };
+
+        // Calibração individual baseada no feedback do usuário
+        const commonY = -32; // Baixou 5px em relação ao anterior (-37)
+        drawWheel(90, commonY);    // Roda Traseira
+        drawWheel(-72, commonY);   // Roda Dianteira (Voltou 60px no X em relação ao anterior -132)
+
         this.ctx.restore();
     }
 
-    loadBusAsset() {
-        this.bus.image = new Image();
-        this.bus.image.onload = () => {
-            console.log("Bus asset loaded successfully from modelos/bus.png");
+    async loadBusAsset() {
+        if (this.bus.image && this.bus.wheelImage) return;
+
+        const img = new Image();
+        img.onload = () => {
+            this.bus.image = img;
+            console.log("Bus asset loaded.");
         };
-        this.bus.image.onerror = () => {
+        img.onerror = () => {
             console.warn("Failed to load bus asset from modelos/bus.png");
         };
-        this.bus.image.src = 'modelos/bus.png';
+        img.src = 'modelos/bus.png';
+
+        const wheelImg = new Image();
+        wheelImg.onload = () => {
+            this.bus.wheelImage = wheelImg;
+            console.log("Wheel asset loaded.");
+        };
+        wheelImg.onerror = () => {
+            console.warn("Failed to load wheel asset from modelos/pneu.png");
+        };
+        wheelImg.src = 'modelos/pneu.png';
     }
 
     async loadEnvironmentAssets() {
@@ -5354,6 +5527,8 @@ class PlayableGame {
             'bedroom_bed': 'assets/props/bedroom_prop_bed.png',
             'bedroom_wardrobe': 'assets/props/bedroom_prop_wardrobe.png',
             'street_sky': 'assets/environments/street_bg_sky.png',
+            'street_bg_mid': 'assets/environments/street_bg_mid.png',
+            'street_bg_far': 'assets/environments/street_bg_far.png',
             'street_pavement': 'assets/environments/street_bg_pavement.png',
             'street_lamp': 'assets/props/street_prop_lamp.png',
             'street_tree': 'assets/props/street_prop_tree.png',
@@ -5361,6 +5536,7 @@ class PlayableGame {
             'street_coffee': 'assets/environments/street_building_coffee.png',
             'street_gym': 'assets/environments/street_building_gym.png',
             'street_grocery': 'assets/environments/street_building_grocery.png',
+            'street_plaza': 'assets/environments/street_building_plaza.png',
             'livingroom_wall': 'assets/environments/livingroom_bg_wall.png',
             'livingroom_floor': 'assets/environments/livingroom_bg_floor.png',
             'livingroom_sofa': 'assets/props/livingroom_prop_sofa.png',
@@ -5383,6 +5559,71 @@ class PlayableGame {
         });
 
         await Promise.all(loadPromises);
-        console.log("Environment assets loaded successfully.");
+    }
+
+    playBusSound(type) {
+        if (!window.AudioContext && !window.webkitAudioContext) return;
+
+        if (!this.audioCtx) {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (type === 'startup') {
+            // Som de "ignição" seguida de sustento
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(40, this.audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, this.audioCtx.currentTime + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(50, this.audioCtx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.05, this.audioCtx.currentTime + 2);
+            gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 2.1);
+
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + 2.1);
+        } else if (type === 'running') {
+            if (this.engineOsc) return; // Já está tocando
+
+            this.engineOsc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+
+            this.engineOsc.type = 'triangle';
+            this.engineOsc.frequency.setValueAtTime(55, this.audioCtx.currentTime);
+
+            // LFO para vibração do motor
+            const lfo = this.audioCtx.createOscillator();
+            const lfoGain = this.audioCtx.createGain();
+            lfo.frequency.value = 15;
+            lfoGain.gain.value = 5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(this.engineOsc.frequency);
+            lfo.start();
+
+            gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.04, this.audioCtx.currentTime + 0.5);
+
+            this.engineOsc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            this.engineOsc.start();
+
+            this.engineGain = gain;
+        } else if (type === 'stop') {
+            if (this.engineGain) {
+                this.engineGain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 0.5);
+                setTimeout(() => {
+                    if (this.engineOsc) {
+                        this.engineOsc.stop();
+                        this.engineOsc = null;
+                        this.engineGain = null;
+                    }
+                }, 600);
+            }
+        }
     }
 }
