@@ -226,6 +226,7 @@ class CharacterCreator {
 
         console.log("All assets loaded");
         this.updatePreview();
+        this.updateLocks();
     }
 
     loadImage(src, label = 'Image') {
@@ -362,7 +363,12 @@ class CharacterCreator {
         });
 
         // Finish Character Setup -> Go to Attributes Screen
-        document.getElementById('btn-finish-char').addEventListener('click', () => {
+        document.getElementById('btn-finish-char').addEventListener('click', (e) => {
+            if (e.target.dataset.locked === "true") {
+                alert("Você selecionou itens premium bloqueados (🔒). Por favor, escolha um dos estilos iniciais (1 ao 3) para prosseguir!");
+                return;
+            }
+
             const nameInput = document.getElementById('char-name');
             const charName = nameInput ? nameInput.value.trim() : '';
 
@@ -409,10 +415,8 @@ class CharacterCreator {
             // Use WALK assets as the "master" list for counts/availability
             const assetCount = this.assets.walk[part].length;
             if (assetCount > 0) {
-                this.state[part].index = Math.floor(Math.random() * assetCount);
-
-                const styleText = document.getElementById(`style-text-${part}`);
-                if (styleText) styleText.textContent = `Estilo ${this.state[part].index + 1}`;
+                const maxAllowed = Math.min(assetCount, 3); // Restrict to unlocked items (0, 1, 2)
+                this.state[part].index = Math.floor(Math.random() * maxAllowed);
 
                 // Random Color (Only for non-skin parts, preserving skin logic)
                 if (part !== 'body') {
@@ -425,6 +429,7 @@ class CharacterCreator {
 
         this.cache = {}; // Clear cache completely
         this.updatePreview();
+        this.updateLocks();
     }
 
     changeStyle(part, dir) {
@@ -437,8 +442,39 @@ class CharacterCreator {
         if (newIndex >= listLength) newIndex = 0;
 
         this.state[part].index = newIndex;
-        document.getElementById(`style-text-${part}`).textContent = `Estilo ${newIndex + 1}`;
         this.updatePreview();
+        this.updateLocks();
+    }
+
+    updateLocks() {
+        let isLocked = false;
+        ['body', 'hair', 'torso', 'legs', 'feet'].forEach(part => {
+            const index = this.state[part].index || 0;
+            const styleText = document.getElementById(`style-text-${part}`);
+            if (styleText) {
+                if (index > 2) {
+                    styleText.innerHTML = `Estilo ${index + 1} <span style="color:#e74c3c; font-size: 0.9em; margin-left: 2px;" title="Item Bloqueado">🔒</span>`;
+                    isLocked = true;
+                } else {
+                    styleText.textContent = `Estilo ${index + 1}`;
+                }
+            }
+        });
+
+        const btnFinish = document.getElementById('btn-finish-char');
+        if (btnFinish) {
+            if (isLocked) {
+                btnFinish.style.background = '#7f8c8d';
+                btnFinish.style.color = '#bdc3c7';
+                btnFinish.style.cursor = 'not-allowed';
+                btnFinish.dataset.locked = "true";
+            } else {
+                btnFinish.style.background = '';
+                btnFinish.style.color = '';
+                btnFinish.style.cursor = 'pointer';
+                btnFinish.dataset.locked = "false";
+            }
+        }
     }
 
     clearCache(part) {

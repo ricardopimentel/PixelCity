@@ -146,6 +146,10 @@ class PlayableGame {
         this.loadMapData('street');
         this.syncSinkAsset();
         this.initEditorUI();
+        
+        this.isCharEditorMode = false;
+        this.charEditorSelected = null;
+        this.initCharEditorUI();
     }
 
     async loadMapData(roomName) {
@@ -1023,6 +1027,23 @@ class PlayableGame {
                             this.keys.e = true;
                         }
                         break;
+                    case 'c':
+                    case 'C':
+                        if (!this.keys.c) {
+                            this.isCharEditorMode = !this.isCharEditorMode;
+                            const panel = document.getElementById('character-editor-panel');
+                            if (panel) panel.style.display = this.isCharEditorMode ? 'block' : 'none';
+
+                            if (this.isCharEditorMode) {
+                                this.isEditorMode = false;
+                                const mapPanel = document.getElementById('map-editor-panel');
+                                if (mapPanel) mapPanel.style.display = 'none';
+                                
+                                this.loadNPCsIntoEditor();
+                            }
+                            this.keys.c = true;
+                        }
+                        break;
                     case 's':
                     case 'S':
                         if (this.isEditorMode && !this.keys.s) {
@@ -1183,6 +1204,8 @@ class PlayableGame {
                     this.keys.Enter = false;
                 } else if (e.key === 'e' || e.key === 'E') {
                     this.keys.e = false;
+                } else if (e.key === 'c' || e.key === 'C') {
+                    this.keys.c = false;
                 } else if (this.keys.hasOwnProperty(e.key)) {
                     this.keys[e.key] = false;
                 }
@@ -1433,6 +1456,290 @@ class PlayableGame {
             btnCloseMessagesPc.addEventListener('click', () => {
                 document.getElementById('pc-app-messages').style.display = 'none';
             });
+        }
+    }
+
+    initCharEditorUI() {
+        // Tab system
+        const tabs = ['appearance', 'behavior', 'dialogue'];
+        tabs.forEach(tab => {
+            const btn = document.getElementById(`tab-btn-${tab}`);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        const content = document.getElementById(`tab-content-${t}`);
+                        const b = document.getElementById(`tab-btn-${t}`);
+                        if (content) content.style.display = 'none';
+                        if (b) b.style.background = '#444';
+                    });
+                    const content = document.getElementById(`tab-content-${tab}`);
+                    if (content) content.style.display = tab === 'appearance' ? 'block' : 'flex';
+                    btn.style.background = '#8e44ad';
+                });
+            }
+        });
+
+        // Selection
+        const selectEl = document.getElementById('editor-char-select');
+        if (selectEl) {
+            selectEl.addEventListener('change', (e) => {
+                const charId = e.target.value;
+                if (!charId || !this.npcData || !this.npcData.story_npcs) {
+                    this.charEditorSelected = null;
+                    return;
+                }
+                // Try finding the live NPC instance first to edit live behaviour
+                let liveNpc = this.npcs.find(n => n.id === charId || n.id === parseInt(charId));
+                let storyNpc = this.npcData.story_npcs.find(n => n.id === charId);
+                
+                // Keep reference to both or just use the live one and copy back on export (we edit story_npcs direct state but live has more fields)
+                // We will edit BOTH at the same time to apply immediately.
+                this.charEditorSelected = storyNpc;
+                this.charEditorSelectedLive = liveNpc;
+                
+                if (this.charEditorSelected) {
+                    // Preencher UI com os dados do char
+                    const state = this.charEditorSelected.state;
+                    if (state) {
+                        document.getElementById('editor-char-color-skin').value = state.skinColor || '#ffdbac';
+                        document.getElementById('editor-char-color-hair').value = state.hair?.color || '#000000';
+                        document.getElementById('editor-char-color-torso').value = state.torso?.color || '#ff0000';
+                        document.getElementById('editor-char-color-legs').value = state.legs?.color || '#0000ff';
+                        
+                        document.getElementById('editor-char-style-hair').innerText = state.hair?.index || 0;
+                        document.getElementById('editor-char-style-torso').innerText = state.torso?.index || 0;
+                        document.getElementById('editor-char-style-legs').innerText = state.legs?.index || 0;
+                        document.getElementById('editor-char-style-feet').innerText = state.feet?.index || 0;
+                    }
+                    
+                    // Behavior
+                    document.getElementById('editor-char-room').value = this.charEditorSelected.initial_room || 'street';
+                    document.getElementById('editor-char-x').value = this.charEditorSelected.x || 0;
+                    document.getElementById('editor-char-y').value = this.charEditorSelected.y || 0;
+                    document.getElementById('editor-char-paused').checked = !!this.charEditorSelected.isPaused;
+                    document.getElementById('editor-char-pattern').value = this.charEditorSelected.movementPattern || '';
+                    
+                    // Dialogue
+                    document.getElementById('editor-char-allow-dialogue').checked = this.charEditorSelected.allowDialogue !== false;
+                    this.refreshCharEditorPhrases();
+
+                    this.updateCharacterEditorPreview();
+                }
+            });
+        }
+        
+        // Behavior Listeners
+        const syncBehavior = (field, type) => {
+            const el = document.getElementById(`editor-char-${field}`);
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    if (!this.charEditorSelected) return;
+                    let val = type === 'checkbox' ? e.target.checked : e.target.value;
+                    if (type === 'number') val = parseFloat(val) || 0;
+                    
+                    const propMap = {
+                        'room': 'initial_room',
+                        'x': 'x',
+                        'y': 'y',
+                        'paused': 'isPaused',
+                        'pattern': 'movementPattern',
+                        'allow-dialogue': 'allowDialogue'
+                    };
+                    const prop = propMap[field];
+                    
+                    this.charEditorSelected[prop] = val;
+                    if (this.charEditorSelectedLive) {
+                        this.charEditorSelectedLive[prop] = val;
+                        // Special triggers for live update
+                        if (prop === 'initial_room') this.charEditorSelectedLive.currentRoom = val;
+                    }
+                });
+            }
+        };
+
+        syncBehavior('room', 'text');
+        syncBehavior('x', 'number');
+        syncBehavior('y', 'number');
+        syncBehavior('paused', 'checkbox');
+        syncBehavior('pattern', 'text');
+        syncBehavior('allow-dialogue', 'checkbox');
+
+
+        // Colors
+        ['skin', 'hair', 'torso', 'legs'].forEach(part => {
+            const colorInput = document.getElementById(`editor-char-color-${part}`);
+            if (colorInput) {
+                colorInput.addEventListener('input', (e) => {
+                    if (this.charEditorSelected && this.charEditorSelected.state) {
+                        if (part === 'skin') {
+                            this.charEditorSelected.state.skinColor = e.target.value;
+                        } else {
+                            if (!this.charEditorSelected.state[part]) this.charEditorSelected.state[part] = {};
+                            this.charEditorSelected.state[part].color = e.target.value;
+                        }
+                        this.updateCharacterEditorPreview();
+                    }
+                });
+            }
+        });
+
+        // Styles
+        document.querySelectorAll('.btn-editor-style').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!this.charEditorSelected || !this.charEditorSelected.state) return;
+                
+                const part = e.target.dataset.part;
+                const dir = parseInt(e.target.dataset.dir);
+                
+                // Get available max from CharacterCreator assets if possible, or assume a fixed max for now
+                // Fallback lengths if game doesn't expose it easily
+                const maxes = { hair: 50, torso: 50, legs: 50, feet: 50 }; // We will limit dynamically later if needed
+                
+                if (!this.charEditorSelected.state[part]) this.charEditorSelected.state[part] = { index: 0, color: '#000000' };
+                
+                let idx = this.charEditorSelected.state[part].index + dir;
+                if (idx < 0) idx = 30; // loop back approximation
+                // simple max limit (if we exceed, image load handles failure, but let's constrain to 30)
+                if (idx > 30) idx = 0; 
+                
+                this.charEditorSelected.state[part].index = idx;
+                document.getElementById(`editor-char-style-${part}`).innerText = idx;
+                this.updateCharacterEditorPreview();
+            });
+        });
+
+        // Export
+        const btnExport = document.getElementById('btn-editor-char-export');
+        if (btnExport) {
+            btnExport.addEventListener('click', () => {
+                if (this.npcData && this.npcData.story_npcs) {
+                    console.log("--- EXPORTED STORY NPCS JSON ---");
+                    console.log(JSON.stringify({ story_npcs: this.npcData.story_npcs }, null, 4));
+                    alert("Dados dos NPCS exportados para o console (F12)!");
+                }
+            });
+        }
+        
+        // Phrases Add button
+        const btnAddPhrase = document.getElementById('btn-editor-add-phrase');
+        if (btnAddPhrase) {
+            btnAddPhrase.addEventListener('click', () => {
+                if (!this.charEditorSelected) return;
+                if (!this.charEditorSelected.phrases) this.charEditorSelected.phrases = [];
+                this.charEditorSelected.phrases.push("Nova frase...");
+                if (this.charEditorSelectedLive) this.charEditorSelectedLive.phrases = this.charEditorSelected.phrases;
+                this.refreshCharEditorPhrases();
+            });
+        }
+    }
+
+    refreshCharEditorPhrases() {
+        const container = document.getElementById('editor-char-phrases-list');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        if (!this.charEditorSelected || !this.charEditorSelected.phrases || this.charEditorSelected.phrases.length === 0) {
+            container.innerHTML = '<span style="color:#777; font-size:0.8rem;">Nenhuma frase cadastrada.</span>';
+            return;
+        }
+
+        this.charEditorSelected.phrases.forEach((phrase, index) => {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '5px';
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = phrase;
+            input.style.flex = '1';
+            input.style.padding = '5px';
+            input.style.background = '#333';
+            input.style.color = '#fff';
+            input.style.border = '1px solid #555';
+            input.style.borderRadius = '3px';
+            input.addEventListener('change', (e) => {
+                this.charEditorSelected.phrases[index] = e.target.value;
+                if (this.charEditorSelectedLive) this.charEditorSelectedLive.phrases = this.charEditorSelected.phrases;
+            });
+
+            const btnDel = document.createElement('button');
+            btnDel.innerText = 'X';
+            btnDel.style.background = '#e74c3c';
+            btnDel.style.color = '#fff';
+            btnDel.style.border = 'none';
+            btnDel.style.borderRadius = '3px';
+            btnDel.style.cursor = 'pointer';
+            btnDel.addEventListener('click', () => {
+                this.charEditorSelected.phrases.splice(index, 1);
+                if (this.charEditorSelectedLive) this.charEditorSelectedLive.phrases = this.charEditorSelected.phrases;
+                this.refreshCharEditorPhrases();
+            });
+
+            div.appendChild(input);
+            div.appendChild(btnDel);
+            container.appendChild(div);
+        });
+    }
+
+    loadNPCsIntoEditor() {
+        const selectEl = document.getElementById('editor-char-select');
+        if (!selectEl) return;
+        selectEl.innerHTML = '<option value="">-- Selecione --</option>';
+
+        if (this.npcData && this.npcData.story_npcs) {
+            this.npcData.story_npcs.forEach(npc => {
+                const opt = document.createElement('option');
+                opt.value = npc.id;
+                opt.innerText = `${npc.name} (${npc.id})`;
+                selectEl.appendChild(opt);
+            });
+        }
+    }
+
+    updateCharacterEditorPreview() {
+        const canvas = document.getElementById('editor-char-preview-canvas');
+        if (!canvas || !this.charEditorSelected || !this.charEditorSelected.state) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
+
+        const state = this.charEditorSelected.state;
+        const cc = this.game.characterCreator;
+        if (!cc) return;
+
+        // Uses assets from CharacterCreator
+        // Draw Order: Body -> Feet -> Legs -> Torso -> Hair
+        const idleAssets = cc.assets.idle;
+
+        const drawLayer = (img, color, partName) => {
+            if (!img) return;
+            const finalImg = cc.getCachedImage(partName, img, color, 'idle', state[partName]?.index || 0);
+            const frameCount = 4;
+            const frameWidth = finalImg.width / frameCount;
+            const frameHeight = finalImg.height / 4; 
+            const dWidth = frameWidth * (canvas.height / frameHeight);
+            const dHeight = canvas.height;
+            const dx = (canvas.width - dWidth) / 2;
+            const dy = 0;
+            // Draw first frame (0), direction Down (0)
+            ctx.drawImage(finalImg, 0, 0, frameWidth, frameHeight, dx, dy, dWidth, dHeight);
+        };
+
+        // Draw Layer by layer
+        if (idleAssets.body && idleAssets.body[state.body?.index || 0]) {
+            drawLayer(idleAssets.body[state.body?.index || 0], state.skinColor, 'body');
+        }
+        if (idleAssets.feet && idleAssets.feet[state.feet?.index || 0]) {
+            drawLayer(idleAssets.feet[state.feet?.index || 0], state.feet?.color || '#000', 'feet');
+        }
+        if (idleAssets.legs && idleAssets.legs[state.legs?.index || 0]) {
+            drawLayer(idleAssets.legs[state.legs?.index || 0], state.legs?.color || '#00f', 'legs');
+        }
+        if (idleAssets.torso && idleAssets.torso[state.torso?.index || 0]) {
+            drawLayer(idleAssets.torso[state.torso?.index || 0], state.torso?.color || '#f00', 'torso');
+        }
+        if (idleAssets.hair && idleAssets.hair[state.hair?.index || 0]) {
+            drawLayer(idleAssets.hair[state.hair?.index || 0], state.hair?.color || '#000', 'hair');
         }
     }
 
@@ -2571,6 +2878,20 @@ class PlayableGame {
                 npc.chatBubble = { text: "Não posso falar agora, estou muito ocupado.", expiresAt: Date.now() + 3000 };
                 return;
             }
+        }
+
+        // Custom Allow Dialogue Check
+        if (npc.allowDialogue === false) {
+            if (npc.phrases && npc.phrases.length > 0) {
+                const randomPhrase = npc.phrases[Math.floor(Math.random() * npc.phrases.length)];
+                npc.chatBubble = { text: randomPhrase, expiresAt: Date.now() + 3000 };
+            } else {
+                npc.chatBubble = { text: "...", expiresAt: Date.now() + 3000 };
+            }
+            // Stop momentarily
+            npc.isPaused = true;
+            setTimeout(() => { if (npc.speed > 0) npc.isPaused = false; }, 3000);
+            return;
         }
 
         this.currentDialoguingNpcId = npc.id;
@@ -4200,10 +4521,42 @@ class PlayableGame {
                     // Unified hitboxes
                     let currentRoomBoxes = this.getRoomHitboxes(npcRoom);
 
-                    let moveX = (npc.direction === 2 ? npc.speed : (npc.direction === 3 ? -npc.speed : 0));
-                    let nextX = npc.x + moveX;
-                    let willCollide = false;
+                    let moveX = 0;
+                    let moveY = 0;
                     let dodgeY = 0;
+                    
+                    if (npc.movementPattern && npc.movementPattern.trim() !== '') {
+                        if (npc.rawPattern !== npc.movementPattern) {
+                            npc.rawPattern = npc.movementPattern;
+                            npc.parsedPattern = npc.movementPattern.split(',').map(s => {
+                                const match = s.trim().match(/([RLUDrlud])(\d+)/);
+                                if (match) return { dir: match[1].toUpperCase(), steps: parseInt(match[2]) * 40 };
+                                return null;
+                            }).filter(Boolean);
+                            npc.patternIndex = 0;
+                            npc.patternStartPos = { x: npc.x, y: npc.y };
+                        }
+                        
+                        if (npc.parsedPattern && npc.parsedPattern.length > 0) {
+                            const p = npc.parsedPattern[npc.patternIndex];
+                            if (p.dir === 'R') { moveX = npc.speed; npc.direction = 2; }
+                            else if (p.dir === 'L') { moveX = -npc.speed; npc.direction = 3; }
+                            else if (p.dir === 'D') { moveY = npc.speed; npc.direction = 0; }
+                            else if (p.dir === 'U') { moveY = -npc.speed; npc.direction = 1; }
+                            
+                            const moved = Math.abs(npc.x - npc.patternStartPos.x) + Math.abs(npc.y - npc.patternStartPos.y);
+                            if (moved >= p.steps) {
+                                npc.patternIndex = (npc.patternIndex + 1) % npc.parsedPattern.length;
+                                npc.patternStartPos = { x: npc.x, y: npc.y };
+                                moveX = 0; moveY = 0;
+                            }
+                        }
+                    } else {
+                        // Standard wandering behavior
+                        moveX = (npc.direction === 2 ? npc.speed : (npc.direction === 3 ? -npc.speed : 0));
+                    }
+
+                    let willCollide = false;
 
                     // 1. Collision with Player
                     let diffX = this.player.x - npc.x;
@@ -4262,6 +4615,7 @@ class PlayableGame {
 
                     // Apply Movement
                     npc.x += moveX;
+                    npc.y += moveY;
                     if (dodgeY !== 0) {
                         // Check collisions for vertical dodge too!
                         if (!this.checkCollisions(npc.x, npc.y + dodgeY, currentRoomBoxes)) {

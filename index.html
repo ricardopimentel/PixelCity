@@ -704,6 +704,134 @@
                 </div>
             </div>
         </div>
+
+        <!-- Painel do Editor de Personagens -->
+        <div id="character-editor-panel" style="display: none; position: absolute; top: 60px; right: 0; width: 320px; height: calc(100% - 60px); background: rgba(0, 0, 0, 0.9); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow-y: auto; z-index: 1000; border-left: 2px solid #8e44ad; backdrop-filter: blur(5px);">
+            <div style="padding: 15px; border-bottom: 1px solid #8e44ad; background: #2c3e50;">
+                <h2 style="margin: 0; font-size: 1.2rem; color: #fff;">👩‍🎨 Character Editor</h2>
+            </div>
+            
+            <div style="padding: 15px;">
+                <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 5px;">Selecione o Personagem:</label>
+                <select id="editor-char-select" style="width: 100%; background: #333; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; margin-bottom: 15px;"></select>
+                
+                <div style="display: flex; justify-content: center; margin-bottom: 15px; background: #222; border-radius: 8px; padding: 10px;">
+                    <canvas id="editor-char-preview-canvas" width="48" height="120" style="image-rendering: pixelated;"></canvas>
+                </div>
+
+                <div id="editor-char-properties" style="border-top: 1px solid #444; padding-top: 15px;">
+                    <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                        <button id="tab-btn-appearance" style="flex:1; padding:5px; background:#8e44ad; color:#fff; border:none; cursor:pointer;">Aparência</button>
+                        <button id="tab-btn-behavior" style="flex:1; padding:5px; background:#444; color:#fff; border:none; cursor:pointer;">Movimento</button>
+                        <button id="tab-btn-dialogue" style="flex:1; padding:5px; background:#444; color:#fff; border:none; cursor:pointer;">Textos</button>
+                    </div>
+
+                    <!-- TAB APARÊNCIA -->
+                    <div id="tab-content-appearance">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: #ccc;">Pele Cor:</label>
+                                <input type="color" id="editor-char-color-skin" value="#ffdbac" style="width: 100%; height: 30px; border: none; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #ccc;">Cabelo Cor:</label>
+                                <input type="color" id="editor-char-color-hair" value="#000000" style="width: 100%; height: 30px; border: none; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #ccc;">Torso Cor:</label>
+                                <input type="color" id="editor-char-color-torso" value="#ff0000" style="width: 100%; height: 30px; border: none; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #ccc;">Pernas Cor:</label>
+                                <input type="color" id="editor-char-color-legs" value="#0000ff" style="width: 100%; height: 30px; border: none; border-radius: 4px;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 5px; border-radius: 4px;">
+                                <span style="font-size: 0.8rem;">Cabelo Estilo:</span>
+                                <div>
+                                    <button class="btn-editor-style" data-part="hair" data-dir="-1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">-</button>
+                                    <span id="editor-char-style-hair" style="display:inline-block; width:20px; text-align:center;">0</span>
+                                    <button class="btn-editor-style" data-part="hair" data-dir="1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">+</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 5px; border-radius: 4px;">
+                                <span style="font-size: 0.8rem;">Camisa Estilo:</span>
+                                <div>
+                                    <button class="btn-editor-style" data-part="torso" data-dir="-1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">-</button>
+                                    <span id="editor-char-style-torso" style="display:inline-block; width:20px; text-align:center;">0</span>
+                                    <button class="btn-editor-style" data-part="torso" data-dir="1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">+</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 5px; border-radius: 4px;">
+                                <span style="font-size: 0.8rem;">Calça Estilo:</span>
+                                <div>
+                                    <button class="btn-editor-style" data-part="legs" data-dir="-1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">-</button>
+                                    <span id="editor-char-style-legs" style="display:inline-block; width:20px; text-align:center;">0</span>
+                                    <button class="btn-editor-style" data-part="legs" data-dir="1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">+</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 5px; border-radius: 4px;">
+                                <span style="font-size: 0.8rem;">Sapatos Estilo:</span>
+                                <div>
+                                    <button class="btn-editor-style" data-part="feet" data-dir="-1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">-</button>
+                                    <span id="editor-char-style-feet" style="display:inline-block; width:20px; text-align:center;">0</span>
+                                    <button class="btn-editor-style" data-part="feet" data-dir="1" style="background:#555; border:none; color:white; padding:2px 8px; cursor:pointer;">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB COMPORTAMENTO -->
+                    <div id="tab-content-behavior" style="display: none; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: #ccc;">Sala (Room):</label>
+                            <input type="text" id="editor-char-room" style="width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px;">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.8rem; color: #ccc;">Posição X:</label>
+                                <input type="number" id="editor-char-x" style="width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.8rem; color: #ccc;">Posição Y:</label>
+                                <input type="number" id="editor-char-y" style="width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                            <input type="checkbox" id="editor-char-paused" style="transform: scale(1.2);">
+                            <label style="font-size: 0.85rem; color: #fff;">Manter NPC Parado</label>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: #ccc;">Padrão Mov. (Ex: R2, L5, U1)</label>
+                            <input type="text" id="editor-char-pattern" placeholder="R=Right, L=Left, U=Up, D=Down" style="width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px;">
+                        </div>
+                    </div>
+
+                    <!-- TAB DIÁLOGOS -->
+                    <div id="tab-content-dialogue" style="display: none; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="editor-char-allow-dialogue" checked style="transform: scale(1.2);">
+                            <label style="font-size: 0.85rem; color: #fff;">Permitir Menu de Diálogo</label>
+                        </div>
+                        <hr style="border:0; border-top: 1px solid #555; margin: 5px 0;">
+                        <div>
+                            <label style="font-size: 0.85rem; color: #ccc; margin-bottom: 5px; display:block;">Frases Cadastradas:</label>
+                            <div id="editor-char-phrases-list" style="display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; padding-right: 5px;">
+                                <!-- Phrases will load here -->
+                            </div>
+                            <button id="btn-editor-add-phrase" style="margin-top: 10px; width: 100%; padding: 5px; background: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Nova Frase</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px; text-align: center;">
+                    <button id="btn-editor-char-export" style="width: 100%; padding: 10px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar JSON (Console)</button>
+                    <p style="font-size: 0.7rem; color: #888; margin-top: 10px;">Pressione 'C' para desativar o modo editor de personagens.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Old script might interfere, so we use game.js -->
