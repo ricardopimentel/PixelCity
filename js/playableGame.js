@@ -121,6 +121,83 @@ class PlayableGame {
         this.sinkState = 'dirty'; // 'dirty' or 'clean'
         this.sinkTimer = 0;
         this.sinkDuration = 10000; // 10 seconds for testing/gameplay feel
+
+        // Map Editor System
+        this.maps = {};
+        this.currentMapData = null;
+        this.isEditorMode = false;
+        this.selectedProp = null;
+        this.dragOffset = { x: 0, y: 0 };
+
+        // Map Editor State
+        this.isEditorMode = false;
+        this.editorSelectedCategory = 'props';
+        this.editorSelectedObject = null;
+        this.editorMapsList = [
+            'street', 'bedroom', 'bathroom', 'livingroom', 'kitchen',
+            'coffee_shop', 'diner_kitchen', 'gym', 'plaza', 'grocery'
+        ];
+        this.editorIsDragging = false;
+        this.editorIsResizing = false;
+        this.editorResizeHandle = null; // 'tl', 'tr', 'bl', 'br'
+
+        // Load initial map
+        this.currentRoom = 'street';
+        this.loadMapData('street');
+        this.syncSinkAsset();
+        this.initEditorUI();
+    }
+
+    async loadMapData(roomName) {
+        // Skip if already loaded or not a standard room
+        if (this.maps[roomName]) {
+            this.currentMapData = this.maps[roomName];
+
+            // Re-apply special logic if needed
+            if (roomName === 'bathroom' && this.currentMapData.doors) {
+                const door = this.currentMapData.doors.find(d => d.interactive === 'exit_bathroom');
+                if (door) door.style = 'simple';
+            }
+
+            this.currentRoom = roomName;
+            if (this.isEditorMode) {
+                this.updateEditorObjectList();
+                this.updateEditorPropertyFields();
+            }
+            return;
+        }
+
+        try {
+            const response = await fetch(`data/maps/${roomName}.json?v=${Date.now()}`);
+            if (!response.ok) throw new Error("Map file not found");
+            const data = await response.json();
+
+            // Re-apply special logic if needed
+            if (roomName === 'bathroom' && data.doors) {
+                const door = data.doors.find(d => d.interactive === 'exit_bathroom');
+                if (door) door.style = 'simple';
+            }
+
+            this.maps[roomName] = data;
+            this.currentMapData = data;
+            this.syncSinkAsset();
+
+            // Sync map boundaries if specified
+            if (data.width) this.mapBounds.width = data.width;
+            if (data.height) this.mapBounds.height = data.height;
+
+            this.currentRoom = roomName;
+
+            if (this.isEditorMode) {
+                this.updateEditorObjectList();
+                this.updateEditorPropertyFields();
+            }
+
+            console.log(`Map loaded: ${roomName}`);
+        } catch (err) {
+            console.warn(`Could not load map data for ${roomName}, using fallback logic.`);
+            this.currentMapData = null; // Fallback to hardcoded methods
+        }
     }
 
     async loadNpcData() {
@@ -931,6 +1008,67 @@ class PlayableGame {
                             this.keys.t = true;
                         }
                         break;
+                    case 'e':
+                    case 'E':
+                        if (!this.keys.e) {
+                            this.isEditorMode = !this.isEditorMode;
+                            this.editorSelectedObject = null;
+                            const panel = document.getElementById('map-editor-panel');
+                            if (panel) panel.style.display = this.isEditorMode ? 'block' : 'none';
+
+                            if (this.isEditorMode) {
+                                this.updateEditorObjectList();
+                                this.updateEditorPropertyFields();
+                            }
+                            this.keys.e = true;
+                        }
+                        break;
+                    case 's':
+                    case 'S':
+                        if (this.isEditorMode && !this.keys.s) {
+                            console.log("--- MAP JSON EXPORT ---");
+                            console.log(JSON.stringify(this.currentMapData, null, 2));
+                            alert("Mapa exportado para o console (F12)!");
+                            this.keys.s = true;
+                        }
+                        break;
+                    case 'r':
+                    case 'R':
+                        if (this.isEditorMode && this.selectedProp && !this.keys.r) {
+                            const assets = Object.keys(this.envAssets);
+                            let idx = assets.indexOf(this.selectedProp.asset);
+                            idx = (idx + 1) % assets.length;
+                            this.selectedProp.asset = assets[idx];
+                            this.keys.r = true;
+                        }
+                        break;
+                    case 'n':
+                    case 'N':
+                        if (this.isEditorMode && !this.keys.n) {
+                            const newProp = {
+                                id: "new_prop_" + Date.now(),
+                                asset: Object.keys(this.envAssets)[0],
+                                x: this.player.x,
+                                y: this.player.y,
+                                w: 50,
+                                h: 50,
+                                zIndex: 5
+                            };
+                            this.currentMapData.props.push(newProp);
+                            this.selectedProp = newProp;
+                            this.keys.n = true;
+                        }
+                        break;
+                    case 'Delete':
+                    case 'Backspace':
+                        if (this.isEditorMode && this.selectedProp) {
+                            const idx = this.currentMapData.props.indexOf(this.selectedProp);
+                            if (idx !== -1) {
+                                this.currentMapData.props.splice(idx, 1);
+                                this.selectedProp = null;
+                            }
+                        }
+                        break;
                     case 'Enter':
                         if (!this.keys.Enter) {
                             if (this.phoneState.isOpen) {
@@ -1043,11 +1181,134 @@ class PlayableGame {
                     this.keys.t = false;
                 } else if (e.key === 'Enter') {
                     this.keys.Enter = false;
+                } else if (e.key === 'e' || e.key === 'E') {
+                    this.keys.e = false;
                 } else if (this.keys.hasOwnProperty(e.key)) {
                     this.keys[e.key] = false;
                 }
             }
         });
+
+        // Mouse Events for Editor
+        this.canvas.addEventListener('mousedown', (e) => {
+            if (!this.isEditorMode || !this.currentMapData) return;
+
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) / this.scale + this.camera.x;
+            const mouseY = (e.clientY - rect.top) / this.scale + this.camera.y;
+
+            const handleSize = 8;
+
+            // 1. Check if we clicked a resize handle of the ALREADY selected object
+            if (this.editorSelectedObject && this.editorSelectedCategory !== 'world') {
+                const obj = this.editorSelectedObject;
+                const w = obj.w || 20;
+                const h = obj.h || 20;
+
+                const handles = {
+                    tl: { x: obj.x, y: obj.y },
+                    tr: { x: obj.x + w, y: obj.y },
+                    bl: { x: obj.x, y: obj.y + h },
+                    br: { x: obj.x + w, y: obj.y + h }
+                };
+
+                for (const [key, pos] of Object.entries(handles)) {
+                    if (mouseX >= pos.x - handleSize && mouseX <= pos.x + handleSize &&
+                        mouseY >= pos.y - handleSize && mouseY <= pos.y + handleSize) {
+                        this.editorIsResizing = true;
+                        this.editorResizeHandle = key;
+                        return; // Handle found, stop here
+                    }
+                }
+            }
+
+            // 2. If no handle clicked, check for object selection
+            let pool = [];
+            if (this.editorSelectedCategory === 'props') pool = this.currentMapData.props || [];
+            else if (this.editorSelectedCategory === 'doors') pool = this.currentMapData.doors || [];
+            else if (this.editorSelectedCategory === 'hitboxes') pool = this.currentMapData.hitboxes || [];
+
+            const clicked = [...pool].reverse().find(p =>
+                mouseX >= p.x && mouseX <= p.x + (p.w || 20) &&
+                mouseY >= p.y && mouseY <= p.y + (p.h || 20)
+            );
+
+            if (clicked) {
+                this.editorSelectedObject = clicked;
+                this.editorIsDragging = true;
+                this.dragOffset.x = mouseX - clicked.x;
+                this.dragOffset.y = mouseY - clicked.y;
+                this.updateEditorObjectList();
+                this.updateEditorPropertyFields();
+            } else {
+                // If clicked empty space, deselect (optional, maybe keep selected?)
+                // this.editorSelectedObject = null;
+                // this.updateEditorPropertyFields();
+            }
+        });
+
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = Math.round((e.clientX - rect.left) / this.scale + this.camera.x);
+            const mouseY = Math.round((e.clientY - rect.top) / this.scale + this.camera.y);
+
+            // Update debug mouse pos
+            this.mousePos.x = mouseX;
+            this.mousePos.y = mouseY;
+
+            if (!this.isEditorMode || !this.editorSelectedObject) return;
+            const obj = this.editorSelectedObject;
+
+            if (this.editorIsResizing && this.editorResizeHandle) {
+                const oldW = obj.w || 20;
+                const oldH = obj.h || 20;
+
+                if (this.editorResizeHandle === 'br') {
+                    obj.w = Math.max(10, mouseX - obj.x);
+                    obj.h = Math.max(10, mouseY - obj.y);
+                } else if (this.editorResizeHandle === 'tl') {
+                    const newX = Math.min(obj.x + oldW - 5, mouseX);
+                    const newY = Math.min(obj.y + oldH - 5, mouseY);
+                    obj.w = oldW + (obj.x - newX);
+                    obj.h = oldH + (obj.y - newY);
+                    obj.x = newX;
+                    obj.y = newY;
+                } else if (this.editorResizeHandle === 'tr') {
+                    const newY = Math.min(obj.y + oldH - 5, mouseY);
+                    obj.w = Math.max(5, mouseX - obj.x);
+                    obj.h = oldH + (obj.y - newY);
+                    obj.y = newY;
+                } else if (this.editorResizeHandle === 'bl') {
+                    const newX = Math.min(obj.x + oldW - 5, mouseX);
+                    obj.x = newX;
+                    obj.w = oldW + (obj.x - newX);
+                    obj.h = Math.max(5, mouseY - obj.y);
+                }
+                this.updateEditorPropertyFields();
+            } else if (this.editorIsDragging) {
+                obj.x = Math.round(mouseX - this.dragOffset.x);
+                obj.y = Math.round(mouseY - this.dragOffset.y);
+                this.updateEditorPropertyFields();
+            }
+        });
+
+        this.canvas.addEventListener('mouseup', () => {
+            this.editorIsDragging = false;
+            this.editorIsResizing = false;
+            this.editorResizeHandle = null;
+            this.dragOffset = { x: 0, y: 0 };
+        });
+
+        this.canvas.addEventListener('wheel', (e) => {
+            if (!this.isEditorMode || !this.editorSelectedObject || this.editorSelectedCategory === 'world') return;
+            e.preventDefault();
+
+            const scaleStep = e.deltaY > 0 ? 0.95 : 1.05;
+            if (this.editorSelectedObject.w) this.editorSelectedObject.w = Math.round(this.editorSelectedObject.w * scaleStep);
+            if (this.editorSelectedObject.h) this.editorSelectedObject.h = Math.round(this.editorSelectedObject.h * scaleStep);
+
+            this.updateEditorPropertyFields();
+        }, { passive: false });
 
         // Mouse movement tracking for debug
         this.canvas.addEventListener('mousemove', (e) => {
@@ -2027,69 +2288,79 @@ class PlayableGame {
     }
 
 
-    interactWithDoor() {
+    async interactWithDoor() {
         if (this.nearDoor === 'exit_bedroom') {
             // Going to Living Room
             this.currentRoom = 'livingroom';
-            // Spawn near living room door entering from bedroom
+            await this.loadMapData('livingroom');
             this.player.x = 120;
             this.player.y = 230;
         } else if (this.nearDoor === 'bathroom') {
             // Going to Bathroom
             this.currentRoom = 'bathroom';
-            // Spawn near bathroom door entering from bedroom
+            await this.loadMapData('bathroom');
             this.player.x = 400;
-            this.player.y = 500; // Entering from bottom usually
+            this.player.y = 500;
         } else if (this.nearDoor === 'exit_bathroom') {
             // Going back to Bedroom from Bathroom
             this.currentRoom = 'bedroom';
+            await this.loadMapData('bedroom');
             this.player.x = 680;
             this.player.y = 230;
         } else if (this.nearDoor === 'enter_bedroom') {
             // Going back to Bedroom from Living Room
             this.currentRoom = 'bedroom';
+            await this.loadMapData('bedroom');
             this.player.x = 120;
             this.player.y = 230;
         } else if (this.nearDoor === 'enter_kitchen') {
             // Going to Kitchen from Living Room
             this.currentRoom = 'kitchen';
+            await this.loadMapData('kitchen');
             this.player.x = 750; // Spawn on right side of kitchen
             this.player.y = this.player.y; // Keep Y coordinate
         } else if (this.nearDoor === 'exit_kitchen') {
             // Going back to Living Room from Kitchen
             this.currentRoom = 'livingroom';
+            await this.loadMapData('livingroom');
             this.player.x = 50; // Spawn on left side of living room
             this.player.y = this.player.y;
         } else if (this.nearDoor === 'enter_street') {
             // Going to Street from Living Room
             this.currentRoom = 'street';
-            this.player.x = 50; // Spawn on left side of street
-            this.player.y = this.player.y;
+            await this.loadMapData('street');
+            this.player.x = 100;
+            this.player.y = 450;
         } else if (this.nearDoor === 'exit_street') {
             // Going back to Living Room from Street
             this.currentRoom = 'livingroom';
-            this.player.x = 750; // Spawn on right side of living room
-            this.player.y = this.player.y;
+            await this.loadMapData('livingroom');
+            this.player.x = 730;
+            this.player.y = 300;
             this.checkTasks('go_to_location', 'apartment');
         } else if (this.nearDoor === 'enter_coffee_shop') {
             this.currentRoom = 'coffee_shop';
+            await this.loadMapData('coffee_shop');
             this.player.x = 400; // Center map
-            this.player.y = 450; // Bottom spawn
+            this.player.y = 550; // Bottom spawn
             this.checkTasks('go_to_location', 'coffee_shop');
         } else if (this.nearDoor === 'exit_coffee_shop') {
             this.currentRoom = 'street';
+            await this.loadMapData('street');
             this.player.x = 750; // Door on street
-            this.player.y = 350;
+            this.player.y = 450;
         } else if (this.nearDoor === 'enter_diner_kitchen') {
             if (this.characterState.unlocked_jobs && this.characterState.unlocked_jobs.includes('dishwasher')) {
                 this.currentRoom = 'diner_kitchen';
+                await this.loadMapData('diner_kitchen');
                 this.player.x = 50;
-                this.player.y = 250;
+                this.player.y = 200;
             } else {
                 alert('Apenas funcionários autorizados podem entrar na cozinha!');
             }
         } else if (this.nearDoor === 'exit_diner_kitchen') {
             this.currentRoom = 'coffee_shop';
+            await this.loadMapData('coffee_shop');
             this.player.x = 50;
             this.player.y = 200;
         } else if (this.nearDoor === 'obj_sink_dishwasher') {
@@ -2108,6 +2379,7 @@ class PlayableGame {
                 // Set sink to clean
                 this.sinkState = 'clean';
                 this.sinkTimer = 0;
+                this.syncSinkAsset();
 
                 this.checkTasks('work_shift', 'job_dishwasher', 1);
                 this.checkTasks('stat_reach', 'money', this.stats.money); // Update money task
@@ -2115,29 +2387,35 @@ class PlayableGame {
             }
         } else if (this.nearDoor === 'enter_gym') {
             this.currentRoom = 'gym';
+            await this.loadMapData('gym');
             this.player.x = 400;
             this.player.y = 450;
             this.checkTasks('go_to_location', 'gym');
         } else if (this.nearDoor === 'exit_gym') {
             this.currentRoom = 'street';
+            await this.loadMapData('street');
             this.player.x = 1280;
             this.player.y = 350;
         } else if (this.nearDoor === 'enter_plaza') {
             this.currentRoom = 'plaza';
+            await this.loadMapData('plaza');
             this.player.x = 400;
             this.player.y = 450;
             this.checkTasks('go_to_location', 'plaza');
         } else if (this.nearDoor === 'exit_plaza') {
             this.currentRoom = 'street';
+            await this.loadMapData('street');
             this.player.x = 1825;
             this.player.y = 350;
         } else if (this.nearDoor === 'enter_grocery') {
             this.currentRoom = 'grocery';
+            await this.loadMapData('grocery');
             this.player.x = 400;
             this.player.y = 450;
             this.checkTasks('go_to_location', 'grocery');
         } else if (this.nearDoor === 'exit_grocery') {
             this.currentRoom = 'street';
+            await this.loadMapData('street');
             this.player.x = 2380;
             this.player.y = 350;
         } else if (this.nearDoor.startsWith('obj_')) {
@@ -3413,8 +3691,17 @@ class PlayableGame {
             localStorage.setItem('highSchoolLifeSave', serialized);
             alert("Jogo Salvo com Sucesso!");
         } catch (e) {
-            console.error("Failed to save the game", e);
+            console.error(`Error loading map ${roomName}:`, e);
             alert("Erro ao salvar o jogo. " + e.message);
+        }
+    }
+
+    syncSinkAsset() {
+        if (this.currentRoom === 'diner_kitchen' && this.currentMapData && this.currentMapData.props) {
+            const sink = this.currentMapData.props.find(p => p.id === 'industrial_sink');
+            if (sink) {
+                sink.asset = this.sinkState === 'clean' ? 'coffee_sink_clean' : 'coffee_sink_dirty';
+            }
         }
     }
 
@@ -3568,91 +3855,14 @@ class PlayableGame {
     }
 
     getRoomHitboxes(room) {
-        if (room === 'bedroom') {
-            return [{ x: 180, y: 150, w: 100, h: 30 }, { x: 480, y: 100, w: 120, h: 80 }, { x: 300, y: 150, w: 140, h: 130 }];
-        } else if (room === 'livingroom') {
-            return [{ x: 280, y: 170, w: 240, h: 40 }, { x: 250, y: 320, w: 300, h: 80 }];
-        } else if (room === 'bathroom') {
-            return [{ x: 320, y: 110, w: 160, h: 40 }, { x: 240, y: 120, w: 50, h: 40 }, { x: 600, y: 130, w: 150, h: 50 }];
-        } else if (room === 'kitchen') {
-            return [{ x: 80, y: 160, w: 300, h: 40 }, { x: 450, y: 160, w: 80, h: 40 }, { x: 250, y: 350, w: 160, h: 80 }];
-        } else if (room === 'street') {
-            return [{ x: 0, y: -400, w: 2800, h: 540 }];
-        } else if (room === 'diner_kitchen') {
-            return [{ x: 50, y: 120, w: 700, h: 40 }]; // Stainless counters
+        // All rooms now have their hitboxes defined in JSON data
+        if (this.currentMapData && this.currentMapData.hitboxes) {
+            return [...this.currentMapData.hitboxes];
         }
         return [];
     }
 
-    drawDinerKitchen() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
 
-        // Tiles
-        this.ctx.fillStyle = '#f5f5f5';
-        this.ctx.fillRect(0, 0, w, 180);
-        this.ctx.fillStyle = '#e0e0e0';
-        for (let x = 0; x < w; x += 40) {
-            this.ctx.fillRect(x, 175, w, 5);
-        }
-
-        // Floor (Professional non-slip)
-        this.ctx.fillStyle = '#546e7a';
-        this.ctx.fillRect(0, 200, w, h - 200);
-
-        // Industrial Sink (Work Station)
-        const sinkX = 300;
-        const sinkY = 90;
-        const sinkW = 200;
-        const sinkH = 110;
-        const spriteKey = this.sinkState === 'clean' ? 'coffee_sink_clean' : 'coffee_sink_dirty';
-
-        if (this.envAssets[spriteKey]) {
-            this.ctx.drawImage(this.envAssets[spriteKey], sinkX, sinkY, sinkW, sinkH);
-        } else {
-            this.ctx.fillStyle = this.sinkState === 'clean' ? '#78909c' : '#546e7a'; // Stainless steel vs Grimy
-            this.ctx.fillRect(sinkX, sinkY + 20, sinkW, sinkH - 30);
-            this.ctx.fillStyle = '#263238'; // Basin
-            this.ctx.fillRect(sinkX + 20, sinkY + 30, sinkW - 40, 40);
-        }
-
-        // Progress Bar (Time to get dirty again)
-        if (this.sinkState === 'clean') {
-            const barW = 100;
-            const barH = 10;
-            const barX = sinkX + (sinkW - barW) / 2;
-            const barY = sinkY - 20;
-            const progress = 1 - (this.sinkTimer / this.sinkDuration);
-
-            // Background
-            this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            this.ctx.fillRect(barX, barY, barW, barH);
-
-            // Progress
-            this.ctx.fillStyle = '#00e676'; // Light green
-            this.ctx.fillRect(barX, barY, barW * progress, barH);
-
-            // Border
-            this.ctx.strokeStyle = '#fff';
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeRect(barX, barY, barW, barH);
-
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '10px Arial';
-            this.ctx.fillText("LIMPO", sinkX + sinkW / 2, barY - 5);
-        }
-
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("ESTAÇÃO DE LAVAGEM", 400, 100);
-
-        // Exit back to Shop
-        this.ctx.fillStyle = '#333';
-        this.ctx.fillRect(0, 120, 10, 100);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillText("LOJA", 30, 180);
-    }
 
     update(dt) {
         if (this.cutscene.active) {
@@ -3666,6 +3876,7 @@ class PlayableGame {
             if (this.sinkTimer >= this.sinkDuration) {
                 this.sinkState = 'dirty';
                 this.sinkTimer = 0;
+                this.syncSinkAsset();
             }
         }
 
@@ -3818,111 +4029,65 @@ class PlayableGame {
             console.log(`FPS approx: ${Math.round(1000 / dt)} | Entities: ${this.npcs.length + 1}`);
         }
 
-        // Proximity detection for doors based on current room
+        // Proximity detection for doors and objects
         this.nearDoor = null;
 
-        if (this.currentRoom === 'bedroom') {
-            // Exit Door: X around 80-160, Y near 220
-            // Bathroom Door: X around 640-720, Y near 220
-            if (this.player.y < 250) {
-                if (this.player.x > 60 && this.player.x < 180) {
-                    this.nearDoor = 'exit_bedroom';
-                } else if (this.player.x > 620 && this.player.x < 740) {
-                    this.nearDoor = 'bathroom';
-                } else if (this.player.x >= 180 && this.player.x <= 280) {
-                    this.nearDoor = 'obj_wardrobe'; // Wardrobe X: 180-280
-                } else if (this.player.x >= 480 && this.player.x <= 600) {
-                    this.nearDoor = 'obj_computer'; // Desk/PC X: 480-600
-                }
-            } else if (this.player.y >= 250 && this.player.y <= 360) {
-                if (this.player.x >= 300 && this.player.x <= 440) {
-                    this.nearDoor = 'obj_bed'; // Bed X: 300-440 Y: 250-360
+        if (this.currentMapData) {
+            // Check doors in the dynamic map
+            if (this.currentMapData.doors) {
+                for (let door of this.currentMapData.doors) {
+                    // Standard door box check
+                    if (this.player.x >= door.x && this.player.x <= door.x + door.w &&
+                        this.player.y >= door.y - 100 && this.player.y <= door.y + door.h + 100) {
+                        this.nearDoor = door.interactive;
+                        break;
+                    }
                 }
             }
-        } else if (this.currentRoom === 'livingroom') {
-            // Bedroom Door: X around 80-160, Y near 220
-            if (this.player.y < 250) {
-                if (this.player.x > 60 && this.player.x < 180) {
-                    this.nearDoor = 'enter_bedroom';
-                } else if (this.player.x >= 280 && this.player.x <= 520) {
-                    this.nearDoor = 'obj_tv'; // TV X: 280-520
+            // Check interactive props in the dynamic map
+            if (!this.nearDoor && this.currentMapData.props) {
+                for (let prop of this.currentMapData.props) {
+                    if (prop.interactive) {
+                        const centerX = prop.x + prop.w / 2;
+                        const centerY = prop.y + prop.h / 2;
+                        if (Math.abs(this.player.x - centerX) < prop.w / 2 + 30 &&
+                            Math.abs(this.player.y - centerY) < prop.h / 2 + 30) {
+                            this.nearDoor = prop.interactive;
+                            break;
+                        }
+                    }
                 }
             }
-            // Kitchen transition on the far left
-            if (this.player.x < 50) {
-                this.nearDoor = 'enter_kitchen';
-            }
-            // Street transition on the far right
-            if (this.player.x > 750) {
-                this.nearDoor = 'enter_street';
-            }
-        } else if (this.currentRoom === 'bathroom') {
-            // Exit Bathroom Door: X around 360-440, Y near bottom 580
-            if (this.player.y > 450) {
-                if (this.player.x > 340 && this.player.x < 460) {
-                    this.nearDoor = 'exit_bathroom';
-                }
-            } else if (this.player.y < 250) {
-                if (this.player.x >= 130 && this.player.x <= 230) {
-                    this.nearDoor = 'obj_toilet'; // Toilet X: 150-210
-                } else if (this.player.x >= 310 && this.player.x <= 490) {
-                    this.nearDoor = 'obj_sink_bath'; // Sink X: 330-470
-                } else if (this.player.x >= 530 && this.player.x <= 750) {
-                    this.nearDoor = 'obj_shower'; // Shower X: 550-750
+            // Check interactive hitboxes in the dynamic map
+            if (!this.nearDoor && this.currentMapData.hitboxes) {
+                for (let hb of this.currentMapData.hitboxes) {
+                    if (hb.interactive) {
+                        const centerX = hb.x + (hb.w || 20) / 2;
+                        const centerY = hb.y + (hb.h || 20) / 2;
+                        if (Math.abs(this.player.x - centerX) < (hb.w || 20) / 2 + 30 &&
+                            Math.abs(this.player.y - centerY) < (hb.h || 20) / 2 + 30) {
+                            this.nearDoor = hb.interactive;
+                            break;
+                        }
+                    }
                 }
             }
-        } else if (this.currentRoom === 'kitchen') {
-            // Exit Kitchen to Living Room on the far right
-            if (this.player.x > 750) {
-                this.nearDoor = 'exit_kitchen';
-            } else if (this.player.y < 250) {
-                if (this.player.x >= 100 && this.player.x <= 160) {
-                    this.nearDoor = 'obj_stove';
-                } else if (this.player.x > 160 && this.player.x <= 380) {
-                    this.nearDoor = 'obj_sink_kitchen'; // sink and counter
-                } else if (this.player.x >= 450 && this.player.x <= 530) {
-                    this.nearDoor = 'obj_fridge';
+        } else {
+            // Hardcoded Fallback for non-refactored maps (Street, etc.)
+            if (this.currentRoom === 'street') {
+                if (this.player.x < 150) {
+                    this.nearDoor = 'exit_street';
+                } else if (this.player.y < 380) { // Near the top edge of the sidewalk buildings
+                    if (this.player.x >= 650 && this.player.x <= 850) {
+                        this.nearDoor = 'enter_coffee_shop';
+                    } else if (this.player.x >= 1150 && this.player.x <= 1400) {
+                        this.nearDoor = 'enter_gym';
+                    } else if (this.player.x >= 1700 && this.player.x <= 1950) {
+                        this.nearDoor = 'enter_plaza';
+                    } else if (this.player.x >= 2250 && this.player.x <= 2500) {
+                        this.nearDoor = 'enter_grocery';
+                    }
                 }
-            } else if (this.player.y >= 350 && this.player.y <= 450) {
-                if (this.player.x >= 230 && this.player.x <= 430) {
-                    this.nearDoor = 'obj_table';
-                }
-            }
-        } else if (this.currentRoom === 'street') {
-            // Exit Street to Living Room on the far left
-            if (this.player.x < 150) {
-                this.nearDoor = 'exit_street';
-            } else if (this.player.y < 380) { // Near the top edge of the sidewalk buildings
-                if (this.player.x >= 650 && this.player.x <= 850) {
-                    this.nearDoor = 'enter_coffee_shop';
-                } else if (this.player.x >= 1150 && this.player.x <= 1400) {
-                    this.nearDoor = 'enter_gym';
-                } else if (this.player.x >= 1700 && this.player.x <= 1950) {
-                    this.nearDoor = 'enter_plaza';
-                } else if (this.player.x >= 2250 && this.player.x <= 2500) {
-                    this.nearDoor = 'enter_grocery';
-                }
-            }
-        } else if (this.currentRoom === 'coffee_shop') {
-            if (this.player.y > 450) this.nearDoor = 'exit_coffee_shop';
-            if (this.player.x < 30 && this.player.y < 250) this.nearDoor = 'enter_diner_kitchen';
-        } else if (this.currentRoom === 'diner_kitchen') {
-            if (this.player.x < 30) this.nearDoor = 'exit_diner_kitchen';
-            if (this.player.x > 280 && this.player.x < 520 && this.player.y < 230) this.nearDoor = 'obj_sink_dishwasher';
-        } else if (this.currentRoom === 'livingroom') {
-            if (this.player.x > this.mapBounds.width - 100) this.nearDoor = 'exit_livingroom';
-            if (this.player.x < 100) this.nearDoor = 'enter_kitchen_apt';
-        } else if (this.currentRoom === 'gym') {
-            if (this.player.y > 500 && this.player.x > 350 && this.player.x < 450) {
-                this.nearDoor = 'exit_gym';
-            }
-        } else if (this.currentRoom === 'plaza') {
-            if (this.player.y > 500 && this.player.x > 350 && this.player.x < 450) {
-                this.nearDoor = 'exit_plaza';
-            }
-        } else if (this.currentRoom === 'grocery') {
-            if (this.player.y > 500 && this.player.x > 350 && this.player.x < 450) {
-                this.nearDoor = 'exit_grocery';
             }
         }
 
@@ -4230,919 +4395,400 @@ class PlayableGame {
         }
     }
 
+    drawMap() {
+        if (!this.currentMapData) return;
+
+        const data = this.currentMapData;
+        const w = data.width || 800;
+        const h = data.height || 600;
+
+        // 1. Draw Background
+        if (data.background) {
+            const bg = data.background;
+
+            // Sky
+            if (bg.sky) {
+                this.ctx.fillStyle = bg.sky.color || '#87CEEB';
+                this.ctx.fillRect(-1000, bg.sky.y || -600, w + 2000, bg.sky.h || 800);
+            }
+
+            // Wall
+            if (bg.wall) {
+                const wall = bg.wall;
+                if (wall.asset && this.envAssets[wall.asset]) {
+                    const pattern = this.ctx.createPattern(this.envAssets[wall.asset], 'repeat');
+                    const matrix = new DOMMatrix();
+                    pattern.setTransform(matrix.scale(wall.scale || 0.25));
+                    this.ctx.fillStyle = pattern;
+                    this.ctx.fillRect(0, 0, w, wall.h || 180);
+                } else {
+                    this.ctx.fillStyle = wall.color || '#ccc';
+                    this.ctx.fillRect(0, 0, w, wall.h || 180);
+                }
+            }
+
+            // Baseboard
+            if (bg.baseboard) {
+                const bb = bg.baseboard;
+                this.ctx.fillStyle = bb.color || '#333';
+                this.ctx.fillRect(0, bb.y || 180, w, bb.h || 20);
+            }
+
+            // Floor
+            if (bg.floor) {
+                const floor = bg.floor;
+                if (floor.asset && this.envAssets[floor.asset]) {
+                    const pattern = this.ctx.createPattern(this.envAssets[floor.asset], 'repeat');
+                    const matrix = new DOMMatrix();
+                    pattern.setTransform(matrix.scale(floor.scale || 0.25));
+                    this.ctx.fillStyle = pattern;
+                    this.ctx.fillRect(0, floor.y || 200, w, floor.h || 400);
+                } else {
+                    this.ctx.fillStyle = floor.color || '#999';
+                    this.ctx.fillRect(0, floor.y || 200, w, floor.h || 400);
+                }
+            }
+
+            // Road
+            if (bg.road) {
+                this.ctx.fillStyle = bg.road.color || '#424242';
+                this.ctx.fillRect(0, bg.road.y || 250, w, bg.road.h || 350);
+            }
+        }
+
+        // 4. Doors (Frames and Labels - ONLY if visible)
+        if (data.doors) {
+            data.doors.forEach(door => {
+                if (door.visible) {
+                    if (door.style === 'simple') {
+                        this.ctx.fillStyle = door.color || '#deb887';
+                        this.ctx.fillRect(door.x, door.y, door.w, door.h);
+                    } else {
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillRect(door.x - 5, door.y - 5, door.w + 10, door.h + 5);
+                        this.ctx.fillStyle = door.color || '#deb887';
+                        this.ctx.fillRect(door.x, door.y, door.w, door.h);
+                        this.ctx.fillStyle = '#ffd700';
+                        this.ctx.beginPath();
+                        this.ctx.arc(door.x + door.w - 12, door.y + door.h / 2, 5, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+
+                    if (door.label) {
+                        this.ctx.fillStyle = '#333';
+                        this.ctx.font = 'bold 12px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(door.label, door.x + door.w / 2, door.y - 10);
+                    }
+                }
+
+                // Interaction indicator for doors in Editor Mode
+                if (this.isEditorMode && door.interactive) {
+                    this.ctx.fillStyle = '#00bfff';
+                    this.ctx.beginPath();
+                    this.ctx.arc(door.x + door.w / 2, door.y + door.h / 2, 10, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('!', door.x + door.w / 2, door.y + door.h / 2 + 4);
+                }
+            });
+        }
+
+        // 5. Props (Sorted by zIndex)
+        const props = [...(data.props || [])].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+        props.forEach(prop => {
+            this.ctx.save();
+
+            // Parallax logic: 1.0 means moves with camera (standard), 0.5 means half speed, etc.
+            // But usually parallax is defined as "scroll speed relative to background"
+            // Let's stick to a simple formula: offsetX = camera.x * (1 - parallaxFactor)
+            let drawX = prop.x;
+            if (prop.parallax !== undefined) {
+                drawX += this.camera.x * (1 - prop.parallax);
+            }
+
+            if (prop.asset && this.envAssets[prop.asset]) {
+                const img = this.envAssets[prop.asset];
+                const scale = prop.scale || 1.0;
+
+                if (prop.repeatX) {
+                    const pattern = this.ctx.createPattern(img, 'repeat-x');
+                    const matrix = new DOMMatrix();
+                    // We translate the pattern to match the prop's world position
+                    matrix.translateSelf(drawX, prop.y);
+                    matrix.scaleSelf(scale, scale);
+                    pattern.setTransform(matrix);
+
+                    this.ctx.fillStyle = pattern;
+                    // Fill the entire width to ensure background tiling
+                    this.ctx.fillRect(-1000, prop.y, w + 2000, (prop.h || img.height) * scale);
+                } else {
+                    const dw = (prop.w || img.width) * scale;
+                    const dh = (prop.h || img.height) * scale;
+                    this.ctx.drawImage(img, drawX, prop.y, dw, dh);
+                }
+            } else if (prop.type === 'fountain') {
+                const scale = prop.scale || 1.0;
+                const sw = (prop.w || 160) * scale;
+                const sh = (prop.h || 160) * scale;
+                this.ctx.fillStyle = '#607d8b';
+                this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2, 0, Math.PI * 2); this.ctx.fill();
+                this.ctx.fillStyle = '#29b6f6';
+                this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2 * 0.75, 0, Math.PI * 2); this.ctx.fill();
+            } else if (prop.type === 'foliage') {
+                const scale = prop.scale || 1.0;
+                const sw = (prop.w || 40) * scale;
+                const sh = (prop.h || 60) * scale;
+                this.ctx.fillStyle = '#5d4037';
+                this.ctx.fillRect(drawX, prop.y, sw / 2, sh);
+                this.ctx.fillStyle = '#388e3c';
+                this.ctx.beginPath();
+                this.ctx.arc(drawX + sw / 4, prop.y - sh / 6, sw, 0, Math.PI * 2);
+                this.ctx.fill();
+            } else if (prop.type === 'tiles') {
+                const size = prop.tileSize || 32;
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.rect(drawX, prop.y, prop.w, prop.h);
+                this.ctx.clip();
+
+                this.ctx.strokeStyle = prop.borderColor || 'rgba(0,0,0,0.1)';
+                this.ctx.lineWidth = 1;
+
+                for (let ty = prop.y; ty < prop.y + prop.h; ty += size) {
+                    for (let tx = drawX; tx < drawX + prop.w; tx += size) {
+                        this.ctx.fillStyle = prop.color || '#fff';
+                        this.ctx.fillRect(tx, ty, size, size);
+                        this.ctx.strokeRect(tx, ty, size, size);
+                    }
+                }
+                this.ctx.restore();
+            } else if (prop.type === 'fridge') {
+                // Fridge Body
+                this.ctx.fillStyle = prop.color || '#f8f8f8';
+                this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
+                // Door separation line
+                this.ctx.strokeStyle = '#ccc';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(drawX, prop.y + prop.h * 0.35);
+                this.ctx.lineTo(drawX + prop.w, prop.y + prop.h * 0.35);
+                this.ctx.stroke();
+                // Handles
+                this.ctx.fillStyle = '#9e9e9e';
+                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.15, 5, 25);
+                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.45, 5, 40);
+                // Feet
+                this.ctx.fillStyle = '#424242';
+                this.ctx.fillRect(drawX + 5, prop.y + prop.h, 10, 4);
+                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h, 10, 4);
+            } else if (prop.type === 'stove') {
+                // Body
+                this.ctx.fillStyle = prop.color || '#e0e0e0';
+                this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
+                // Top (gray)
+                this.ctx.fillStyle = '#757575';
+                this.ctx.fillRect(drawX, prop.y, prop.w, 15);
+                // Oven window
+                this.ctx.fillStyle = '#212121';
+                this.ctx.fillRect(drawX + 8, prop.y + 40, prop.w - 16, prop.h - 55);
+                // Knobs
+                this.ctx.fillStyle = '#424242';
+                for (let i = 0; i < 4; i++) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(drawX + 15 + i * (prop.w - 25) / 3, prop.y + 25, 4, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                // Handle
+                this.ctx.fillStyle = '#9e9e9e';
+                this.ctx.fillRect(drawX + 10, prop.y + 45, prop.w - 20, 5);
+            } else if (prop.type === 'sink_kitchen') {
+                // Countertop
+                this.ctx.fillStyle = prop.color || '#bdbdbd';
+                this.ctx.fillRect(drawX, prop.y, prop.w, 15);
+                // Cabinet
+                this.ctx.fillStyle = '#a1887f';
+                this.ctx.fillRect(drawX + 5, prop.y + 15, prop.w - 10, prop.h - 15);
+                // Basin area
+                this.ctx.fillStyle = '#cfd8dc';
+                this.ctx.fillRect(drawX + 15, prop.y + 2, prop.w * 0.4, 10);
+                // Faucet
+                this.ctx.fillStyle = '#9e9e9e';
+                this.ctx.fillRect(drawX + 25, prop.y - 12, 4, 15);
+                this.ctx.fillRect(drawX + 15, prop.y - 12, 12, 4);
+            } else {
+                this.ctx.fillStyle = prop.color || '#f0f';
+                if (prop.repeatX && prop.interval) {
+                    const startX = prop.x;
+                    const endX = w + 1000;
+                    for (let xi = startX; xi < endX; xi += prop.interval) {
+                        let dx = xi;
+                        if (prop.parallax !== undefined) {
+                            dx += this.camera.x * (1 - prop.parallax);
+                        }
+                        this.ctx.fillRect(dx, prop.y, prop.w || 50, prop.h || 50);
+                    }
+                } else {
+                    this.ctx.fillRect(drawX, prop.y, prop.w || 50, prop.h || 50);
+                }
+            }
+            // --- DECORATIONS & OVERLAYS ---
+
+            // Progress Bar (for things like the sink)
+            if (prop.showProgress && this.sinkState === 'clean') {
+                const barW = (prop.w || 50) * 0.8;
+                const barH = 10;
+                const barX = drawX + ((prop.w || 50) - barW) / 2;
+                const barY = prop.y - 20;
+                const progress = 1 - (this.sinkTimer / this.sinkDuration);
+
+                this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                this.ctx.fillRect(barX, barY, barW, barH);
+                this.ctx.fillStyle = '#00e676';
+                this.ctx.fillRect(barX, barY, barW * progress, barH);
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.strokeRect(barX, barY, barW, barH);
+            }
+
+            // Highlight if selected in Editor
+            if (this.isEditorMode && this.selectedProp === prop) {
+                this.ctx.strokeStyle = '#00ff00';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(drawX - 2, prop.y - 2, (prop.w || 50) + 4, (prop.h || 50) + 4);
+
+                // Draw interaction range if interactive
+                if (prop.interactive) {
+                    this.ctx.save();
+                    this.ctx.strokeStyle = 'rgba(0, 191, 255, 0.5)';
+                    this.ctx.setLineDash([10, 5]);
+                    this.ctx.lineWidth = 2;
+                    const centerX = drawX + (prop.w || 50) / 2;
+                    const centerY = prop.y + (prop.h || 50) / 2;
+                    const marginX = (prop.w || 50) / 2 + 30;
+                    const marginY = (prop.h || 50) / 2 + 30;
+                    this.ctx.strokeRect(centerX - marginX, centerY - marginY, marginX * 2, marginY * 2);
+                    this.ctx.restore();
+                }
+
+                // Draw info
+                this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                this.ctx.fillRect(drawX, prop.y - 25, 80, 20);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '10px monospace';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(`${Math.round(prop.x)},${Math.round(prop.y)}`, drawX + 40, prop.y - 11);
+            }
+
+            // Draw Interaction Icon for all interactive props in Editor Mode
+            if (this.isEditorMode && prop.interactive) {
+                this.ctx.fillStyle = '#00bfff';
+                this.ctx.beginPath();
+                this.ctx.arc(drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2, 12, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('!', drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2 + 5);
+            }
+
+            this.ctx.restore();
+        });
+
+        // --- EDITOR HIGHLIGHT & HANDLES ---
+        if (this.isEditorMode && this.editorSelectedObject) {
+            const obj = this.editorSelectedObject;
+            const w = obj.w || 20;
+            const h = obj.h || 20;
+
+            this.ctx.save();
+            this.ctx.strokeStyle = '#00ff00';
+            this.ctx.setLineDash([5, 5]);
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(obj.x, obj.y, w, h);
+
+            // Resize Handles (Bolinhas nos cantos)
+            if (this.editorSelectedCategory !== 'world') {
+                this.ctx.setLineDash([]);
+                this.ctx.fillStyle = 'white';
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 1;
+                const hSize = 5;
+                const corners = [
+                    { x: obj.x, y: obj.y },
+                    { x: obj.x + w, y: obj.y },
+                    { x: obj.x, y: obj.y + h },
+                    { x: obj.x + w, y: obj.y + h }
+                ];
+                corners.forEach(pos => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(pos.x, pos.y, hSize, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                });
+            }
+
+            // Interaction range for doors/objects
+            if (obj.interactive) {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                this.ctx.setLineDash([5, 5]);
+                if (this.editorSelectedCategory === 'doors') {
+                    // Door check is different (rectangle)
+                    this.ctx.strokeRect(obj.x, obj.y - 100, obj.w || 20, (obj.h || 20) + 200);
+                }
+                this.ctx.restore();
+            }
+
+            // Label
+            this.ctx.fillStyle = '#00ff00';
+            this.ctx.font = 'bold 12px Arial';
+            let label = obj.id || obj.interactive || 'Selected';
+            if (obj.interactive) label += ` [${obj.interactive}]`;
+            this.ctx.fillText(label, obj.x, obj.y - 10);
+            this.ctx.restore();
+        }
+
+        // --- DRAW ALL HITBOXES IF ON HITBOX TAB ---
+        if (this.isEditorMode && this.editorSelectedCategory === 'hitboxes' && this.currentMapData.hitboxes) {
+            this.ctx.save();
+            this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            this.ctx.lineWidth = 2;
+            this.currentMapData.hitboxes.forEach(hb => {
+                if (hb === this.editorSelectedObject) return; // Already highlighted
+                this.ctx.strokeRect(hb.x, hb.y, hb.w || 20, hb.h || 20);
+
+                // Draw interaction icon for hitboxes if they have an ID
+                if (hb.interactive) {
+                    this.ctx.fillStyle = '#ff9800'; // Orange for hitbox triggers
+                    this.ctx.beginPath();
+                    this.ctx.arc(hb.x + (hb.w || 20) / 2, hb.y + (hb.h || 20) / 2, 8, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 10px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('!', hb.x + (hb.w || 20) / 2, hb.y + (hb.h || 20) / 2 + 4);
+                }
+            });
+            this.ctx.restore();
+        }
+    }
+
     drawEnvironment() {
         this.ctx.save();
         this.ctx.translate(-this.camera.x, -this.camera.y);
 
-        if (this.currentRoom === 'bedroom') {
-            this.drawBedroom();
-        } else if (this.currentRoom === 'livingroom') {
-            this.drawLivingRoom();
-        } else if (this.currentRoom === 'bathroom') {
-            this.drawBathroom();
-        } else if (this.currentRoom === 'kitchen') {
-            this.drawKitchen();
-        } else if (this.currentRoom === 'street') {
-            this.drawStreet();
-        } else if (this.currentRoom === 'coffee_shop') {
-            this.drawCoffeeShop();
-        } else if (this.currentRoom === 'diner_kitchen') {
-            this.drawDinerKitchen();
-        } else if (this.currentRoom === 'gym') {
-            this.drawGym();
-        } else if (this.currentRoom === 'plaza') {
-            this.drawPlaza();
-        } else if (this.currentRoom === 'grocery') {
-            this.drawGroceryStore();
+        if (this.currentMapData) {
+            this.drawMap();
         }
 
         this.ctx.restore();
     }
 
-    drawBedroom() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
 
-        // Back Wall
-        if (this.envAssets['bedroom_wall']) {
-            const pattern = this.ctx.createPattern(this.envAssets['bedroom_wall'], 'repeat');
-            const matrix = new DOMMatrix();
-            pattern.setTransform(matrix.scale(0.25));
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 0, w, 180);
-        } else {
-            this.ctx.fillStyle = '#a2c4c9'; // Fallback
-            this.ctx.fillRect(0, 0, w, 180);
-        }
 
-        // Baseboard
-        this.ctx.fillStyle = '#f4f4f4';
-        this.ctx.fillRect(0, 180, w, 20);
 
-        // Floor
-        if (this.envAssets['bedroom_floor']) {
-            const pattern = this.ctx.createPattern(this.envAssets['bedroom_floor'], 'repeat');
-            const matrix = new DOMMatrix();
-            pattern.setTransform(matrix.scale(0.25));
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 200, w, h - 200);
-        } else {
-            this.ctx.fillStyle = '#cd853f'; // Fallback
-            this.ctx.fillRect(0, 200, w, h - 200);
-            this.ctx.strokeStyle = '#a0522d';
-            this.ctx.lineWidth = 1;
-            for (let i = 0; i < w; i += 40) {
-                this.ctx.beginPath();
-                this.ctx.moveTo(i, 200);
-                this.ctx.lineTo(i, h);
-                this.ctx.stroke();
-            }
-        }
-
-        // --- DOORS ---
-        const doorWidth = 80;
-        const doorHeight = 150;
-
-        // Door 1 (Exit) - Left side
-        const exitX = 80;
-        const exitY = 50;
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(exitX - 5, exitY - 5, doorWidth + 10, doorHeight + 5);
-        this.ctx.fillStyle = '#deb887';
-        this.ctx.fillRect(exitX, exitY, doorWidth, doorHeight);
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.beginPath();
-        this.ctx.arc(exitX + doorWidth - 12, exitY + doorHeight / 2, 5, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("SALA", exitX + doorWidth / 2, exitY - 10);
-
-        // Door 2 (Bathroom) - Right side
-        const bathX = 640;
-        const bathY = 50;
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(bathX - 5, bathY - 5, doorWidth + 10, doorHeight + 5);
-        this.ctx.fillStyle = '#87cefa';
-        this.ctx.fillRect(bathX, bathY, doorWidth, doorHeight);
-        this.ctx.fillStyle = '#c0c0c0';
-        this.ctx.beginPath();
-        this.ctx.arc(bathX + 12, bathY + doorHeight / 2, 5, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("BANHEIRO", bathX + doorWidth / 2, bathY - 10);
-
-        // --- DECOR ---
-        // Rug
-        this.ctx.fillStyle = '#6b8e23';
-        this.ctx.beginPath();
-        this.ctx.ellipse(this.canvas.width / 2, 380, 160, 60, 0, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Wardrobe
-        if (this.envAssets['bedroom_wardrobe']) {
-            this.ctx.drawImage(this.envAssets['bedroom_wardrobe'], 180, 30, 100, 150);
-        } else {
-            this.ctx.fillStyle = '#8b4513';
-            this.ctx.fillRect(180, 30, 100, 150);
-            this.ctx.fillStyle = '#a0522d';
-            this.ctx.fillRect(185, 40, 40, 130);
-            this.ctx.fillRect(235, 40, 40, 130);
-        }
-
-        // Desk & Computer
-        this.ctx.fillStyle = '#cd853f';
-        this.ctx.fillRect(480, 130, 120, 50);
-        if (this.envAssets['bedroom_computer']) {
-            this.ctx.drawImage(this.envAssets['bedroom_computer'], 500, 70, 80, 70);
-        } else {
-            this.ctx.fillStyle = '#111';
-            this.ctx.fillRect(510, 100, 60, 40);
-            this.ctx.fillStyle = '#4169e1';
-            this.ctx.fillRect(515, 105, 50, 30);
-        }
-        this.ctx.fillStyle = '#333';
-        this.ctx.fillRect(530, 140, 20, 10);
-        this.ctx.fillStyle = '#ddd';
-        this.ctx.fillRect(515, 160, 50, 15);
-
-        // Double Bed
-        if (this.envAssets['bedroom_bed']) {
-            // Adjust position for sprite
-            this.ctx.drawImage(this.envAssets['bedroom_bed'], 300, 80, 140, 150);
-        } else {
-            this.ctx.fillStyle = '#8b4513';
-            this.ctx.fillRect(300, 80, 140, 100);
-            this.ctx.fillStyle = '#f0f8ff';
-            this.ctx.fillRect(310, 130, 120, 150);
-            this.ctx.fillStyle = '#ff69b4';
-            this.ctx.fillRect(310, 180, 120, 100);
-        }
-    }
-
-    drawLivingRoom() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Back Wall
-        if (this.envAssets['livingroom_wall']) {
-            const pattern = this.ctx.createPattern(this.envAssets['livingroom_wall'], 'repeat');
-            const matrix = new DOMMatrix();
-            pattern.setTransform(matrix.scale(0.25));
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 0, w, 180);
-        } else {
-            this.ctx.fillStyle = '#f5e6d3';
-            this.ctx.fillRect(0, 0, w, 180);
-        }
-
-        // Baseboard
-        this.ctx.fillStyle = '#3e2723';
-        this.ctx.fillRect(0, 180, w, 20);
-
-        // Floor (Carpet/Stone)
-        if (this.envAssets['livingroom_floor']) {
-            const pattern = this.ctx.createPattern(this.envAssets['livingroom_floor'], 'repeat');
-            const matrix = new DOMMatrix();
-            pattern.setTransform(matrix.scale(0.25));
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 200, w, h - 200);
-        } else {
-            this.ctx.fillStyle = '#8d6e63';
-            this.ctx.fillRect(0, 200, w, h - 200);
-        }
-
-        // --- TRANSITION ZONE (LEFT END) ---
-        // Archway to Kitchen
-        this.ctx.fillStyle = '#f4f4f4';
-        this.ctx.fillRect(0, 20, 40, 180);
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText("COZINHA", 10, 100);
-
-        // --- TRANSITION ZONE (RIGHT END) ---
-        // Door to Street
-        const streetDoorX = this.canvas.width - 60;
-        this.ctx.fillStyle = '#a0522d';
-        this.ctx.fillRect(streetDoorX, 50, 60, 150);
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.beginPath();
-        this.ctx.arc(streetDoorX + 15, 125, 5, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'right';
-        this.ctx.fillText("RUA", streetDoorX + 50, 40);
-
-        // --- DOORS ---
-        const doorWidth = 80;
-        const doorHeight = 150;
-
-        // Door back to Bedroom - Left side
-        const bedX = 80;
-        const bedY = 50;
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(bedX - 5, bedY - 5, doorWidth + 10, doorHeight + 5);
-        this.ctx.fillStyle = '#deb887';
-        this.ctx.fillRect(bedX, bedY, doorWidth, doorHeight);
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.beginPath();
-        this.ctx.arc(bedX + doorWidth - 12, bedY + doorHeight / 2, 5, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("QUARTO", bedX + doorWidth / 2, bedY - 10);
-
-        // --- LIVING ROOM DECOR ---
-        // TV
-        if (this.envAssets['livingroom_tv']) {
-            this.ctx.drawImage(this.envAssets['livingroom_tv'], 280, 60, 240, 150);
-        } else {
-            this.ctx.fillStyle = '#111';
-            this.ctx.fillRect(300, 60, 200, 110);
-            this.ctx.fillStyle = '#222';
-            this.ctx.fillRect(310, 70, 180, 90);
-            this.ctx.fillStyle = '#5c4033';
-            this.ctx.fillRect(280, 170, 240, 40);
-        }
-
-        // Sofa
-        if (this.envAssets['livingroom_sofa2']) {
-            this.ctx.drawImage(this.envAssets['livingroom_sofa2'], 250, 305, 300, 110);
-        } else if (this.envAssets['livingroom_sofa']) {
-            this.ctx.drawImage(this.envAssets['livingroom_sofa'], 250, 310, 300, 100);
-        } else {
-            this.ctx.fillStyle = '#8b0000';
-            this.ctx.fillRect(250, 320, 300, 80);
-            this.ctx.fillStyle = '#a52a2a';
-            this.ctx.fillRect(260, 310, 135, 40);
-            this.ctx.fillRect(405, 310, 135, 40);
-        }
-
-        // Rug
-        this.ctx.fillStyle = '#ffdead';
-        this.ctx.beginPath();
-        this.ctx.ellipse(400, 280, 200, 70, 0, 0, Math.PI * 2);
-        this.ctx.fill();
-    }
-
-    drawBathroom() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Back Wall (Tiles)
-        this.ctx.fillStyle = '#e0f7fa';
-        this.ctx.fillRect(0, 0, w, 180);
-        this.ctx.strokeStyle = '#b2ebf2';
-        for (let i = 0; i < w; i += 20) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 0); this.ctx.lineTo(i, 180); this.ctx.stroke();
-            this.ctx.beginPath(); this.ctx.moveTo(0, i); this.ctx.lineTo(w, i); this.ctx.stroke();
-        }
-
-        // Baseboard
-        this.ctx.fillStyle = '#006064';
-        this.ctx.fillRect(0, 180, w, 20);
-
-        // Floor (Dark Tiles)
-        this.ctx.fillStyle = '#263238';
-        this.ctx.fillRect(0, 200, w, h - 200);
-        this.ctx.strokeStyle = '#37474f';
-        for (let i = 0; i < w; i += 40) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 200); this.ctx.lineTo(i, h); this.ctx.stroke();
-            this.ctx.beginPath(); this.ctx.moveTo(0, 200 + i); this.ctx.lineTo(w, 200 + i); this.ctx.stroke();
-        }
-        // Mirror
-        this.ctx.fillStyle = '#87cefa';
-        this.ctx.fillRect(350, 40, 100, 70);
-        this.ctx.strokeStyle = '#c0c0c0';
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeRect(350, 40, 100, 70);
-
-        // Sink
-        if (this.envAssets['bathroom_sink']) {
-            this.ctx.drawImage(this.envAssets['bathroom_sink'], 330, 120, 140, 80);
-        } else {
-            this.ctx.fillStyle = '#f8f8ff';
-            this.ctx.fillRect(330, 140, 140, 60);
-            this.ctx.fillStyle = '#dcdcdc';
-            this.ctx.beginPath();
-            this.ctx.ellipse(400, 160, 40, 20, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        // Toilet
-        if (this.envAssets['bathroom_toilet']) {
-            this.ctx.drawImage(this.envAssets['bathroom_toilet'], 140, 110, 80, 100);
-        } else {
-            this.ctx.fillStyle = '#f8f8ff';
-            this.ctx.fillRect(150, 120, 60, 80);
-            this.ctx.beginPath();
-            this.ctx.ellipse(180, 210, 30, 40, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        // Bath tub / Shower
-        if (this.envAssets['bathroom_shower']) {
-            this.ctx.drawImage(this.envAssets['bathroom_shower'], 550, 60, 200, 140);
-        } else {
-            this.ctx.fillStyle = '#f8f8ff';
-            this.ctx.fillRect(550, 80, 200, 120);
-            this.ctx.strokeStyle = '#b0c4de';
-            this.ctx.strokeRect(560, 90, 180, 100);
-        }
-
-        // --- EXIT DOOR ---
-        // Door back to bedroom (at the bottom of the screen)
-        const doorWidth = 80;
-        const doorHeight = 20;
-        const exitX = 360;
-        const exitY = this.canvas.height - doorHeight;
-
-        this.ctx.fillStyle = '#deb887'; // Burlywood
-        this.ctx.fillRect(exitX, exitY, doorWidth, doorHeight);
-        // Label mapped to floor
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("QUARTO", exitX + doorWidth / 2, exitY - 5);
-    }
-
-    drawKitchen() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Back Wall (Paint + Backsplash)
-        this.ctx.fillStyle = '#fff9c4'; // Pale yellow wall
-        this.ctx.fillRect(0, 0, w, 120);
-
-        this.ctx.fillStyle = '#ffe082'; // Light orange backsplash tiles
-        this.ctx.fillRect(0, 120, w, 60);
-
-        // Baseboard
-        this.ctx.fillStyle = '#e65100';
-        this.ctx.fillRect(0, 180, w, 20);
-
-        // Floor (Linoleum/Checkerboard)
-        this.ctx.fillStyle = '#fafafa';
-        this.ctx.fillRect(0, 200, w, h - 200);
-        this.ctx.fillStyle = '#bdbdbd';
-        for (let y = 200; y < h; y += 40) {
-            for (let x = 0; x < w; x += 40) {
-                if (((x + y) / 40) % 2 === 0) {
-                    this.ctx.fillRect(x, y, 40, 40);
-                }
-            }
-        }
-
-        // --- KITCHEN DECOR ---
-
-        // Window
-        this.ctx.fillStyle = '#87ceeb'; // Sky blue
-        this.ctx.fillRect(350, 40, 120, 80);
-        this.ctx.strokeStyle = '#fff'; // Window frame
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeRect(350, 40, 120, 80);
-        this.ctx.beginPath();
-        this.ctx.moveTo(410, 40); this.ctx.lineTo(410, 120);
-        this.ctx.moveTo(350, 80); this.ctx.lineTo(470, 80);
-        this.ctx.stroke();
-
-        // Counters
-        this.ctx.fillStyle = '#8b4513'; // Saddle brown cabinets
-        this.ctx.fillRect(80, 120, 300, 80);
-        this.ctx.fillStyle = '#dcdcdc'; // Marble-like countertop
-        this.ctx.fillRect(75, 115, 310, 15);
-
-        // Cabinet doors
-        this.ctx.strokeStyle = '#a0522d';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(90, 140, 60, 50);
-        this.ctx.strokeRect(160, 140, 60, 50);
-        this.ctx.strokeRect(230, 140, 60, 50);
-        this.ctx.strokeRect(300, 140, 60, 50);
-
-        // Sink
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillRect(240, 110, 50, 10);
-        this.ctx.fillStyle = '#c0c0c0'; // Faucet
-        this.ctx.fillRect(260, 90, 10, 20);
-        this.ctx.fillRect(260, 90, 20, 5);
-        this.ctx.fillRect(280, 90, 5, 10);
-
-        // Stove
-        this.ctx.fillStyle = '#f5f5f5'; // White stove
-        this.ctx.fillRect(100, 100, 60, 100);
-        // Stove top
-        this.ctx.fillStyle = '#111';
-        this.ctx.fillRect(105, 100, 20, 10);
-        this.ctx.fillRect(135, 100, 20, 10);
-        // Oven glass
-        this.ctx.fillStyle = '#222';
-        this.ctx.fillRect(110, 130, 40, 40);
-
-        // Fridge
-        this.ctx.fillStyle = '#f8f8ff'; // Ghost white fridge
-        this.ctx.fillRect(450, 20, 80, 180);
-        this.ctx.strokeStyle = '#ccc';
-        this.ctx.strokeRect(450, 20, 80, 180);
-        this.ctx.beginPath();
-        this.ctx.moveTo(450, 100); this.ctx.lineTo(530, 100); // Freezer split
-        this.ctx.stroke();
-        // Handles
-        this.ctx.fillStyle = '#d3d3d3';
-        this.ctx.fillRect(460, 50, 10, 30);
-        this.ctx.fillRect(460, 110, 10, 40);
-
-        // Dining Table
-        if (this.envAssets['kitchen_table']) {
-            this.ctx.drawImage(this.envAssets['kitchen_table'], 240, 310, 180, 130);
-        } else {
-            this.ctx.fillStyle = '#deb887'; // Burlywood table
-            this.ctx.fillRect(250, 350, 160, 80);
-            // Chairs
-            this.ctx.fillStyle = '#cd853f';
-            this.ctx.fillRect(270, 320, 30, 30);
-            this.ctx.fillRect(360, 320, 30, 30);
-            this.ctx.fillRect(270, 430, 30, 30);
-            this.ctx.fillRect(360, 430, 30, 30);
-        }
-
-        // --- TRANSITION ZONE (RIGHT END) ---
-        // We draw an invisible or explicit 'door' at the right
-        const rectX = this.canvas.width - 40;
-        this.ctx.fillStyle = '#f4f4f4';
-        this.ctx.fillRect(rectX, 20, 40, 180); // Open archway approximation
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'right';
-        this.ctx.fillText("SALA", rectX + 30, 100);
-    }
-
-    drawCoffeeShop() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Wall
-        this.ctx.fillStyle = '#d7ccc8';
-        this.ctx.fillRect(0, 0, w, 180);
-        // Floor
-        this.ctx.fillStyle = '#3e2723';
-        this.ctx.fillRect(0, 200, w, h - 200);
-
-        // Counter
-        if (this.envAssets['coffee_counter']) {
-            this.ctx.drawImage(this.envAssets['coffee_counter'], 80, 80, 300, 130);
-        } else {
-            this.ctx.fillStyle = '#5d4037';
-            this.ctx.fillRect(100, 140, 250, 60);
-            this.ctx.fillStyle = '#8d6e63';
-            this.ctx.fillRect(100, 140, 250, 10);
-        }
-
-        // Machines
-        if (!this.envAssets['coffee_counter']) {
-            this.ctx.fillStyle = '#bdbdbd';
-            this.ctx.fillRect(150, 100, 60, 40);
-            this.ctx.fillStyle = '#212121';
-            this.ctx.fillRect(160, 110, 10, 10);
-            // Glasses
-            this.ctx.fillStyle = '#fff';
-            this.ctx.fillRect(230, 120, 10, 20);
-            this.ctx.fillRect(250, 120, 10, 20);
-        }
-
-        // Tables
-        const drawTable = (x, y) => {
-            if (this.envAssets['coffee_table']) {
-                this.ctx.drawImage(this.envAssets['coffee_table'], x - 60, y - 60, 120, 120);
-            } else {
-                this.ctx.fillStyle = '#fff'; // Table covering
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, 40, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.fillStyle = '#8d6e63'; // Chair
-                this.ctx.fillRect(x - 50, y - 10, 20, 20);
-                this.ctx.fillRect(x + 30, y - 10, 20, 20);
-            }
-        };
-        drawTable(500, 300);
-        drawTable(650, 350);
-
-        // Exit
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(w / 2 - 40, h - 20, 80, 20);
-        this.ctx.fillStyle = '#000';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("SAIR", w / 2, h - 5);
-
-        // Kitchen Door
-        this.ctx.fillStyle = '#5d4037';
-        this.ctx.fillRect(0, 120, 10, 100);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText("COZINHA", 15, 180);
-    }
-
-    drawGym() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Wall
-        this.ctx.fillStyle = '#cfd8dc';
-        this.ctx.fillRect(0, 0, w, 180);
-        // Mirrors
-        this.ctx.fillStyle = '#e3f2fd';
-        this.ctx.fillRect(50, 40, 300, 100);
-        this.ctx.fillRect(450, 40, 300, 100);
-
-        // Floor
-        this.ctx.fillStyle = '#263238'; // Rubber floor
-        this.ctx.fillRect(0, 200, w, h - 200);
-
-        // Treadmills
-        const drawTreadmill = (x, y) => {
-            this.ctx.fillStyle = '#455a64';
-            this.ctx.fillRect(x, y, 40, 120);
-            this.ctx.fillStyle = '#111';
-            this.ctx.fillRect(x + 5, y + 5, 30, 20);
-        };
-        drawTreadmill(100, 250);
-        drawTreadmill(200, 250);
-        drawTreadmill(300, 250);
-
-        // Weights
-        this.ctx.fillStyle = '#b0bec5';
-        this.ctx.fillRect(600, 250, 100, 40);
-        this.ctx.fillStyle = '#212121';
-        this.ctx.beginPath();
-        this.ctx.arc(580, 270, 20, 0, Math.PI * 2);
-        this.ctx.arc(720, 270, 20, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillRect(580, 265, 140, 10);
-
-        // Exit
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(w / 2 - 40, h - 20, 80, 20);
-        this.ctx.fillStyle = '#000';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("SAIR", w / 2, h - 5);
-    }
-
-    drawPlaza() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Background grass
-        this.ctx.fillStyle = '#81c784';
-        this.ctx.fillRect(0, 0, w, h);
-
-        // Paved paths
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillRect(350, 0, 100, h);
-        this.ctx.fillRect(0, 250, w, 100);
-
-        // Center Fountain
-        this.ctx.fillStyle = '#607d8b';
-        this.ctx.beginPath();
-        this.ctx.arc(400, 300, 80, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#29b6f6';
-        this.ctx.beginPath();
-        this.ctx.arc(400, 300, 60, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(395, 260, 10, 40); // Water jet
-
-        // Benches
-        const drawBench = (x, y) => {
-            this.ctx.fillStyle = '#8d6e63';
-            this.ctx.fillRect(x, y, 60, 20);
-        };
-        drawBench(250, 200);
-        drawBench(490, 200);
-        drawBench(250, 380);
-        drawBench(490, 380);
-
-        // Trees
-        const drawTree = (x, y) => {
-            this.ctx.fillStyle = '#5d4037';
-            this.ctx.fillRect(x, y, 20, 60);
-            this.ctx.fillStyle = '#388e3c';
-            this.ctx.beginPath();
-            this.ctx.arc(x + 10, y - 10, 40, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        drawTree(100, 100);
-        drawTree(600, 100);
-        drawTree(150, 450);
-        drawTree(650, 400);
-
-        // Exit area
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.)'; // No bg needed for plaza exit
-        this.ctx.fillStyle = '#000';
-        this.ctx.font = 'bold 14px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("RUA (PARA BAIXO)", w / 2, h - 20);
-    }
-
-    drawGroceryStore() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        // Wall
-        this.ctx.fillStyle = '#fffde7'; // Light yellow
-        this.ctx.fillRect(0, 0, w, 180);
-
-        // Floor
-        this.ctx.fillStyle = '#e0e0e0';
-        this.ctx.fillRect(0, 200, w, h - 200);
-        // Floor tiles
-        this.ctx.strokeStyle = '#bdbdbd';
-        for (let i = 0; i < w; i += 40) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 200); this.ctx.lineTo(i, h); this.ctx.stroke();
-        }
-        for (let j = 200; j < h; j += 40) {
-            this.ctx.beginPath(); this.ctx.moveTo(0, j); this.ctx.lineTo(w, j); this.ctx.stroke();
-        }
-
-        // Shelves
-        const drawShelf = (x, y) => {
-            this.ctx.fillStyle = '#eceff1';
-            this.ctx.fillRect(x, y, 200, 40);
-            this.ctx.fillStyle = '#90a4ae';
-            this.ctx.fillRect(x, y + 10, 200, 5);
-            this.ctx.fillRect(x, y + 25, 200, 5);
-            // Items on shelf
-            this.ctx.fillStyle = '#f44336'; this.ctx.fillRect(x + 10, y - 15, 10, 15);
-            this.ctx.fillStyle = '#4caf50'; this.ctx.fillRect(x + 30, y - 15, 10, 15);
-            this.ctx.fillStyle = '#ffeb3b'; this.ctx.fillRect(x + 50, y - 15, 15, 15);
-            this.ctx.fillStyle = '#2196f3'; this.ctx.fillRect(x + 80, y - 20, 10, 20);
-        };
-        drawShelf(50, 140);
-        drawShelf(350, 140);
-        drawShelf(50, 280);
-        drawShelf(350, 280);
-
-        // Checkout Counter
-        this.ctx.fillStyle = '#795548';
-        this.ctx.fillRect(600, 350, 150, 60);
-        this.ctx.fillStyle = '#d7ccc8';
-        this.ctx.fillRect(600, 350, 150, 10);
-        this.ctx.fillStyle = '#212121'; // Register
-        this.ctx.fillRect(620, 330, 40, 20);
-
-        // Exit
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(w / 2 - 40, h - 20, 80, 20);
-        this.ctx.fillStyle = '#000';
-        this.ctx.font = 'bold 12px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("SAIR", w / 2, h - 5);
-    }
-
-    drawStreet() {
-        const w = this.mapBounds.width;
-        const h = this.mapBounds.height;
-
-        const screenWidth = this.canvas.width / this.scale;
-
-        if (!this.loggedBg) {
-            console.log("Bg Far Present?", !!this.envAssets['street_bg_far']);
-            console.log("Bg Mid Present?", !!this.envAssets['street_bg_mid']);
-            console.log("Bg Sky Present?", !!this.envAssets['street_sky']);
-            this.loggedBg = true;
-        }
-
-        // 1. ALWAYS draw the sky base to prevent black/grey voids
-        this.ctx.fillStyle = '#87CEEB';
-        this.ctx.fillRect(-1000, -600, w + 2000, 800);
-
-        // 2. Far Background (City/Skyline) - Slow Parallax
-        if (this.envAssets['street_bg_far'] && this.envAssets['street_bg_far'].width > 0) {
-            const img = this.envAssets['street_bg_far'];
-            const scale = 540 / img.height;
-            const scaledW = img.width * scale;
-            // Para fazer mover mais devagar que a rua, adicionamos uma parte da câmera de volta.
-            // 0.5 = move na metade da velocidade da rua.
-            const parallaxOffset = this.camera.x * 0.5;
-
-            for (let x = -1000; x < w + 2000; x += scaledW) {
-                // Add 1px to width to fix subpixel gaps
-                this.ctx.drawImage(img, x + parallaxOffset, -400, scaledW + 1, 540);
-            }
-        } else if (this.envAssets['street_sky'] && this.envAssets['street_sky'].width > 0) {
-            const pattern = this.ctx.createPattern(this.envAssets['street_sky'], 'repeat-x');
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, -400, w, 540);
-        }
-
-        // 3. Mid Background (Trees/Vegetation) - No Parallax (Moves exactly like buildings)
-        if (this.envAssets['street_bg_mid'] && this.envAssets['street_bg_mid'].width > 0) {
-            const img = this.envAssets['street_bg_mid'];
-            const targetHeight = 160;
-            const scale = targetHeight / img.height;
-            const scaledW = img.width * scale;
-
-            // Sem offset = a imagem fica na rua e se move exatamente igual aos prédios (1:1)
-            const parallaxOffset = 0;
-            const yOffset = 140 - targetHeight; // Bottom aligns exactly with the sidewalk at Y=140
-
-            for (let x = -1000; x < w + 2000; x += scaledW) {
-                this.ctx.drawImage(img, x + parallaxOffset, yOffset, scaledW + 1, targetHeight);
-            }
-        } else {
-            // Original building fallback if image completely fails
-            this.ctx.fillStyle = '#78909c';
-            this.ctx.fillRect(0, -200, w, 340);
-            this.ctx.fillStyle = '#546e7a';
-            for (let i = 50; i < w; i += 300) {
-                this.ctx.fillRect(i, -120, 200, 260);
-            }
-        }
-
-
-        // Sidewalk
-        if (this.envAssets['street_pavement']) {
-            const pattern = this.ctx.createPattern(this.envAssets['street_pavement'], 'repeat');
-            if (typeof DOMMatrix !== 'undefined') {
-                pattern.setTransform(new DOMMatrix().scale(0.0833, 0.0833));
-            }
-            this.ctx.fillStyle = pattern;
-            this.ctx.fillRect(0, 140, w, 110);
-        } else {
-            this.ctx.fillStyle = '#e0e0e0';
-            this.ctx.fillRect(0, 140, w, 60);
-            this.ctx.strokeStyle = '#9e9e9e';
-            for (let i = 0; i < w; i += 30) {
-                this.ctx.beginPath(); this.ctx.moveTo(i, 140); this.ctx.lineTo(i, 200); this.ctx.stroke();
-            }
-        }
-
-        // Road
-        this.ctx.fillStyle = '#424242';
-        this.ctx.fillRect(0, 250, w, h - 250);
-
-        // Curb (Meio-fio)
-        this.ctx.fillStyle = '#616161'; // Slightly lighter than #424242
-        this.ctx.fillRect(0, 240, w, 10);
-
-        // Road lines
-        this.ctx.fillStyle = '#ffeb3b';
-        for (let i = 0; i < w; i += 80) {
-            this.ctx.fillRect(i, 350, 40, 10);
-        }
-
-        // --- WALL BEHIND BUILDINGS ---
-        // Draw a simple canvas wall spanning the whole width
-        const wallHeight = 40;
-        const wallY = 140 - wallHeight;
-
-        // Wall body
-        this.ctx.fillStyle = '#bdbdbd'; // Light gray
-        this.ctx.fillRect(-1000, wallY, w + 2000, wallHeight);
-
-        // Top border
-        this.ctx.fillStyle = '#757575'; // Dark gray
-        this.ctx.fillRect(-1000, wallY, w + 2000, 6);
-
-        // --- STREET DECOR ---
-
-        // Tree
-        if (this.envAssets['street_tree']) {
-            this.ctx.drawImage(this.envAssets['street_tree'], 450, -120, 200, 320);
-            this.ctx.drawImage(this.envAssets['street_tree'], 1450, -120, 200, 320);
-            this.ctx.drawImage(this.envAssets['street_tree'], 2600, -120, 200, 320);
-        } else {
-            this.ctx.fillStyle = '#8b4513';
-            this.ctx.fillRect(450, -60, 60, 200);
-            this.ctx.fillStyle = '#228b22';
-            this.ctx.beginPath();
-            this.ctx.arc(480, -160, 120, 0, Math.PI * 2);
-            this.ctx.arc(380, -60, 100, 0, Math.PI * 2);
-            this.ctx.arc(580, -60, 100, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        // Street Lamp
-        if (this.envAssets['street_lamp']) {
-            this.ctx.drawImage(this.envAssets['street_lamp'], 345, 60, 90, 140);
-            this.ctx.drawImage(this.envAssets['street_lamp'], 1045, 60, 90, 140);
-            this.ctx.drawImage(this.envAssets['street_lamp'], 2045, 60, 90, 140);
-        } else {
-            this.ctx.fillStyle = '#555';
-            this.ctx.fillRect(380, -100, 15, 240);
-            this.ctx.fillRect(350, -120, 60, 20);
-            this.ctx.fillStyle = '#ffffbb';
-            this.ctx.beginPath();
-            this.ctx.arc(385, -90, 24, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        // --- TRANSITION ZONE (LEFT END) - APARTMENT BUILDING ---
-        const bX = 0;
-        const bWidth = 420;
-
-        if (this.envAssets['street_apt']) {
-            this.ctx.drawImage(this.envAssets['street_apt'], bX, -340, bWidth, 540);
-        } else {
-            // Building main body
-            this.ctx.fillStyle = '#90a4ae';
-            this.ctx.fillRect(bX, 20, bWidth, 180);
-
-            // Windows
-            this.ctx.fillStyle = '#cfd8dc';
-            for (let wy = 40; wy < 100; wy += 40) {
-                for (let wx = 10; wx < 130; wx += 40) {
-                    if (wx === 50 && wy > 60) continue;
-                    this.ctx.fillRect(bX + wx, wy, 25, 25);
-                }
-            }
-
-            // Door back to house
-            const houseDoorX = 50;
-            this.ctx.fillStyle = '#5d4037';
-            this.ctx.fillRect(houseDoorX, 120, 40, 80);
-            this.ctx.fillStyle = '#ffd700';
-            this.ctx.beginPath();
-            this.ctx.arc(houseDoorX + 32, 160, 4, 0, Math.PI * 2);
-            this.ctx.fill();
-
-            // Building Sign/Awning
-            this.ctx.fillStyle = '#ff7043';
-            this.ctx.fillRect(bX, 100, bWidth, 20);
-            this.ctx.fillStyle = '#000';
-            this.ctx.font = 'bold 10px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("APTOS", houseDoorX + 20, 98);
-        }
-
-        // --- NEW LOCATIONS ---
-
-        // Coffee Shop
-        if (this.envAssets['street_coffee']) {
-            this.ctx.drawImage(this.envAssets['street_coffee'], 600, -160, 300, 360);
-        } else {
-            this.ctx.fillStyle = '#6d4c41';
-            this.ctx.fillRect(600, -160, 300, 360);
-            this.ctx.fillStyle = '#d7ccc8'; // Light Brown window
-            this.ctx.fillRect(620, -40, 260, 160);
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 32px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("CAFETERIA", 750, -80);
-        }
-
-        // Gym
-        if (this.envAssets['street_gym']) {
-            this.ctx.drawImage(this.envAssets['street_gym'], 1100, -220, 360, 420);
-        } else {
-            this.ctx.fillStyle = '#455a64';
-            this.ctx.fillRect(1100, -220, 360, 420);
-            this.ctx.fillStyle = '#b0bec5'; // Light grey window
-            this.ctx.fillRect(1140, -80, 280, 180);
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 32px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("ACADEMIA", 1280, -120);
-        }
-
-        // Plaza (Park area)
-        if (this.envAssets['street_plaza']) {
-            this.ctx.drawImage(this.envAssets['street_plaza'], 1600, -170, 450, 420);
-        } else {
-            this.ctx.fillStyle = '#81c784'; // Light green grass
-            this.ctx.fillRect(1600, -40, 450, 240);
-            this.ctx.fillStyle = '#388e3c'; // Dark green bush
-            this.ctx.beginPath();
-            this.ctx.arc(1720, 40, 60, 0, Math.PI * 2);
-            this.ctx.arc(1820, 10, 80, 0, Math.PI * 2);
-            this.ctx.arc(1920, 40, 60, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 32px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText("PRAÇA", 1825, -60);
-
-        // Grocery (Mercadinho)
-        if (this.envAssets['street_grocery']) {
-            this.ctx.drawImage(this.envAssets['street_grocery'], 2200, -160, 360, 360);
-        } else {
-            this.ctx.fillStyle = '#388e3c';
-            this.ctx.fillRect(2200, -160, 360, 360);
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 32px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("MERCADO", 2380, -80);
-        }
-    }
 
     drawNPC(npc) {
         const canWalk = npc.speed > 0;
@@ -5664,6 +5310,14 @@ class PlayableGame {
             'bathroom_toilet': 'assets/props/bathroom_prop_toilet.png',
             'bedroom_computer': 'assets/props/bedroom_prop_computer.png',
             'kitchen_table': 'assets/props/kitchen_prop_table.png',
+            'kitchen_counter': 'assets/props/kitchen_prop_counter.png',
+            'kitchen_refrigerator1': 'assets/props/kitchen_prop_refrigerator1.png',
+            'kitchen_refrigerator2': 'assets/props/kitchen_prop_refrigerator2.png',
+            'kitchen_refrigerator3': 'assets/props/kitchen_prop_refrigerator3.png',
+            'kitchen_sink': 'assets/props/kitchen_prop_sink.png',
+            'kitchen_stove': 'assets/props/kitchen_prop_stove.png',
+            'kitchen_table2': 'assets/props/kitchen_prop_table2.png',
+            'kitchen_window': 'assets/props/kitchen_prop_window.png',
             'coffee_counter': 'assets/props/coffee_prop_counter.png',
             'coffee_table': 'assets/props/coffee_prop_table.png',
             'coffee_sink_clean': 'assets/props/coffee_prop_kitchen_sink_clean.png',
@@ -5752,5 +5406,248 @@ class PlayableGame {
                 }, 600);
             }
         }
+    }
+
+    // --- ADVANCED MAP EDITOR METHODS ---
+
+    initEditorUI() {
+        const mapSelect = document.getElementById('editor-map-select');
+        if (!mapSelect) return;
+
+        // Populate Maps
+        this.editorMapsList.forEach(map => {
+            const opt = document.createElement('option');
+            opt.value = map;
+            opt.textContent = map.charAt(0).toUpperCase() + map.slice(1).replace('_', ' ');
+            mapSelect.appendChild(opt);
+        });
+        mapSelect.value = this.currentRoom;
+
+        mapSelect.onchange = (e) => {
+            this.loadMapData(e.target.value);
+        };
+
+        // Tabs
+        const tabs = document.querySelectorAll('.editor-tab');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => t.style.background = '#222');
+                tab.style.background = '#444';
+                this.editorSelectedCategory = tab.dataset.tab;
+                this.editorSelectedObject = null;
+                this.updateEditorObjectList();
+                this.updateEditorPropertyFields();
+            };
+        });
+
+        // Add/Delete Buttons
+        const btnAdd = document.getElementById('btn-editor-add');
+        const btnDelete = document.getElementById('btn-editor-delete');
+        const btnExport = document.getElementById('btn-editor-export');
+
+        if (btnAdd) btnAdd.onclick = () => this.editorAddObject();
+        if (btnDelete) btnDelete.onclick = () => this.editorDeleteObject();
+        if (btnExport) btnExport.onclick = () => {
+            console.log("--- MAP JSON EXPORT ---");
+            console.log(JSON.stringify(this.currentMapData, null, 2));
+            alert("JSON exportado no console (F12)!");
+        };
+    }
+
+    updateEditorObjectList() {
+        const list = document.getElementById('editor-object-list');
+        if (!list || !this.currentMapData) return;
+        list.innerHTML = '';
+
+        let items = [];
+        if (this.editorSelectedCategory === 'props') items = this.currentMapData.props || [];
+        else if (this.editorSelectedCategory === 'doors') items = this.currentMapData.doors || [];
+        else if (this.editorSelectedCategory === 'hitboxes') items = this.currentMapData.hitboxes || [];
+        else if (this.editorSelectedCategory === 'world') {
+            items = [
+                { id: 'Sky', type: 'sky', data: this.currentMapData.background?.sky },
+                { id: 'Floor', type: 'floor', data: this.currentMapData.background?.floor },
+                { id: 'Road', type: 'road', data: this.currentMapData.background?.road }
+            ];
+        }
+
+        items.forEach((item, idx) => {
+            const li = document.createElement('li');
+            li.textContent = item.id || item.interactive || `[${idx}] ${this.editorSelectedCategory}`;
+            li.style.padding = '8px 10px';
+            li.style.cursor = 'pointer';
+            li.style.borderBottom = '1px solid #333';
+            li.style.transition = 'background 0.2s';
+
+            if (this.editorSelectedObject === item) {
+                li.style.background = '#3498db';
+                li.style.color = 'white';
+            }
+
+            li.onclick = () => {
+                this.editorSelectedObject = item;
+                this.updateEditorObjectList();
+                this.updateEditorPropertyFields();
+            };
+
+            li.onmouseenter = () => {
+                if (this.editorSelectedObject !== item) li.style.background = '#2c3e50';
+            };
+            li.onmouseleave = () => {
+                if (this.editorSelectedObject !== item) li.style.background = 'transparent';
+            };
+
+            list.appendChild(li);
+        });
+    }
+
+    updateEditorPropertyFields() {
+        const container = document.getElementById('editor-prop-fields');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!this.editorSelectedObject) {
+            container.innerHTML = '<p style="font-size: 0.8rem; color: #666; text-align: center; margin-top: 20px;">Clique em um item da lista ou no mapa para editar.</p>';
+            return;
+        }
+
+        const obj = this.editorSelectedObject;
+        const target = obj.data || obj; // For world items, they wrap the real data
+
+        const createField = (label, key, type = 'text') => {
+            const div = document.createElement('div');
+            div.style.marginBottom = '10px';
+            div.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">${label}</label>`;
+
+            const input = document.createElement('input');
+            input.type = type === 'number' ? 'number' : (type === 'color' ? 'color' : 'text');
+            input.value = target[key] !== undefined ? target[key] : '';
+            input.style.width = '100%';
+            input.style.background = '#111';
+            input.style.color = '#fff';
+            input.style.border = '1px solid #444';
+            input.style.padding = '5px';
+            input.style.borderRadius = '3px';
+            input.style.fontSize = '0.8rem';
+
+            input.oninput = (e) => {
+                const val = (type === 'number' && e.target.value !== '') ? parseFloat(e.target.value) : e.target.value;
+                target[key] = val;
+            };
+
+            div.appendChild(input);
+            container.appendChild(div);
+        };
+
+        if (this.editorSelectedCategory === 'world') {
+            if (obj.type === 'sky') {
+                createField('Cor HEX', 'color', 'color');
+                createField('Pos Y', 'y', 'number');
+                createField('Altura H', 'h', 'number');
+            } else if (obj.type === 'floor') {
+                createField('Asset Name', 'asset');
+                createField('Pos Y', 'y', 'number');
+                createField('Altura H', 'h', 'number');
+                createField('Escala', 'scale', 'number');
+            } else if (obj.type === 'road') {
+                createField('Cor HEX', 'color', 'color');
+                createField('Pos Y', 'y', 'number');
+                createField('Altura H', 'h', 'number');
+            }
+            return;
+        }
+
+        // Common Fields
+        if (obj.id !== undefined) createField('ID (Nome)', 'id');
+
+        // Interaction field is always visible for props, doors and hitboxes to allow easy trigger setup
+        if (this.editorSelectedCategory === 'props' || this.editorSelectedCategory === 'doors' || this.editorSelectedCategory === 'hitboxes') {
+            createField('ID Interação / Telep', 'interactive');
+        } else if (obj.interactive !== undefined) {
+            createField('ID Interação / Telep', 'interactive');
+        }
+        if (obj.asset !== undefined) {
+            const div = document.createElement('div');
+            div.style.marginBottom = '10px';
+            div.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Asset (Sprite)</label>`;
+            const sel = document.createElement('select');
+            sel.style.width = '100%'; sel.style.background = '#111'; sel.style.color = '#fff'; sel.style.padding = '5px';
+            sel.style.border = '1px solid #444';
+            Object.keys(this.envAssets).forEach(asset => {
+                const opt = document.createElement('option');
+                opt.value = asset; opt.textContent = asset;
+                if (obj.asset === asset) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            sel.onchange = (e) => { obj.asset = e.target.value; };
+            div.appendChild(sel);
+            container.appendChild(div);
+        }
+
+        if (obj.x !== undefined) createField('Posição X', 'x', 'number');
+        if (obj.y !== undefined) createField('Posição Y', 'y', 'number');
+        if (obj.w !== undefined) createField('Largura (W)', 'w', 'number');
+        if (obj.h !== undefined) createField('Altura (H)', 'h', 'number');
+        if (obj.zIndex !== undefined) createField('Z-Index (Camada)', 'zIndex', 'number');
+        if (obj.color !== undefined) createField('Cor / Opacidade', 'color');
+        if (obj.style !== undefined) createField('Estilo (ex: simple)', 'style');
+        if (obj.parallax !== undefined) createField('Parallax (0-1)', 'parallax', 'number');
+        if (obj.repeatX !== undefined) createField('Repetir X (true/false)', 'repeatX');
+    }
+
+    editorAddObject() {
+        if (!this.currentMapData) return;
+
+        let newObj = {
+            id: this.editorSelectedCategory + "_" + Date.now(),
+            x: Math.round(this.player.x),
+            y: Math.round(this.player.y),
+            w: 50,
+            h: 50
+        };
+
+        if (this.editorSelectedCategory === 'props') {
+            newObj.asset = "shelf";
+            newObj.zIndex = 5;
+            if (!this.currentMapData.props) this.currentMapData.props = [];
+            this.currentMapData.props.push(newObj);
+        } else if (this.editorSelectedCategory === 'doors') {
+            newObj.interactive = "enter_room";
+            newObj.color = "rgba(255, 255, 0, 0.4)";
+            if (!this.currentMapData.doors) this.currentMapData.doors = [];
+            this.currentMapData.doors.push(newObj);
+        } else if (this.editorSelectedCategory === 'hitboxes') {
+            if (!this.currentMapData.hitboxes) this.currentMapData.hitboxes = [];
+            this.currentMapData.hitboxes.push(newObj);
+        } else {
+            alert("Não é possível adicionar itens no modo Mundo.");
+            return;
+        }
+
+        this.editorSelectedObject = newObj;
+        this.updateEditorObjectList();
+        this.updateEditorPropertyFields();
+    }
+
+    editorDeleteObject() {
+        if (!this.editorSelectedObject || !this.currentMapData) return;
+        if (this.editorSelectedCategory === 'world') {
+            alert("Itens do mundo não podem ser deletados.");
+            return;
+        }
+
+        let arr = null;
+        if (this.editorSelectedCategory === 'props') arr = this.currentMapData.props;
+        else if (this.editorSelectedCategory === 'doors') arr = this.currentMapData.doors;
+        else if (this.editorSelectedCategory === 'hitboxes') arr = this.currentMapData.hitboxes;
+
+        if (arr) {
+            const idx = arr.indexOf(this.editorSelectedObject);
+            if (idx !== -1) arr.splice(idx, 1);
+        }
+
+        this.editorSelectedObject = null;
+        this.updateEditorObjectList();
+        this.updateEditorPropertyFields();
     }
 }

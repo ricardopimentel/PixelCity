@@ -1,0 +1,57 @@
+{
+    "name": "diner_kitchen",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "color": "#f5f5f5",
+            "h": 180
+        },
+        "floor": {
+            "color": "#546e7a",
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "industrial_sink",
+            "asset": "coffee_sink_dirty",
+            "x": 298,
+            "y": 70,
+            "w": 219,
+            "h": 167,
+            "zIndex": 1,
+            "interactive": "obj_sink_dishwasher",
+            "showProgress": true
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_shop",
+            "x": 0,
+            "y": 120,
+            "w": 40,
+            "h": 100,
+            "interactive": "exit_diner_kitchen",
+            "label": "LOJA",
+            "color": "#333",
+            "visible": true
+        }
+    ],
+    "hitboxes": [
+        {
+            "x": 42,
+            "y": 161,
+            "w": 745,
+            "h": 38
+        },
+        {
+            "id": "hitboxes_1772931737379",
+            "x": 324,
+            "y": 179,
+            "w": 143,
+            "h": 47
+        }
+    ]
+}

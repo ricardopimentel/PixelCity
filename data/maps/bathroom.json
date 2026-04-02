@@ -1,0 +1,120 @@
+{
+    "name": "bathroom",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "color": "#e0f7fa",
+            "h": 180
+        },
+        "baseboard": {
+            "color": "#006064",
+            "y": 180,
+            "h": 20
+        },
+        "floor": {
+            "color": "#263238",
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "wall_tiles",
+            "type": "tiles",
+            "x": 0,
+            "y": 0,
+            "w": 800,
+            "h": 180,
+            "color": "#e0f7fa",
+            "borderColor": "rgba(178, 235, 242, 0.5)",
+            "tileSize": 25,
+            "zIndex": -10
+        },
+        {
+            "id": "floor_tiles",
+            "type": "tiles",
+            "x": 0,
+            "y": 200,
+            "w": 800,
+            "h": 400,
+            "color": "#263238",
+            "borderColor": "rgba(255, 255, 255, 0.05)",
+            "tileSize": 40,
+            "zIndex": -10
+        },
+        {
+            "id": "mirror",
+            "color": "#87cefa",
+            "x": 350,
+            "y": 40,
+            "w": 100,
+            "h": 70,
+            "zIndex": 1
+        },
+        {
+            "id": "sink",
+            "asset": "bathroom_sink",
+            "x": 343,
+            "y": 113,
+            "w": 113,
+            "h": 68,
+            "zIndex": 2,
+            "interactive": "obj_sink_bath"
+        },
+        {
+            "id": "toilet",
+            "asset": "bathroom_toilet",
+            "x": 132,
+            "y": 129,
+            "w": 88,
+            "h": 97,
+            "zIndex": 1,
+            "interactive": "obj_toilet"
+        },
+        {
+            "id": "shower",
+            "asset": "bathroom_shower",
+            "x": 551,
+            "y": 16,
+            "w": 210,
+            "h": 234,
+            "zIndex": 1,
+            "interactive": "obj_shower"
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_bedroom",
+            "x": 380,
+            "y": 580,
+            "w": 40,
+            "h": 20,
+            "interactive": "exit_bathroom",
+            "label": "QUARTO",
+            "color": "#deb887",
+            "style": "simple",
+            "visible": true
+        }
+    ],
+    "hitboxes": [
+        {
+            "x": 363,
+            "y": 139,
+            "w": 70,
+            "h": 35
+        },
+        {
+            "x": 161,
+            "y": 176,
+            "w": 31,
+            "h": 41
+        },
+        {
+            "x": 589,
+            "y": 176,
+            "w": 132,
+            "h": 50
+        }
+    ]
+}

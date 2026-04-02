@@ -1,0 +1,85 @@
+{
+    "name": "grocery",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "color": "#fffde7",
+            "h": 180
+        },
+        "floor": {
+            "color": "#e0e0e0",
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "shelf_1",
+            "color": "#eceff1",
+            "x": 50,
+            "y": 140,
+            "w": 200,
+            "h": 40,
+            "zIndex": 1
+        },
+        {
+            "id": "shelf_2",
+            "color": "#eceff1",
+            "x": 350,
+            "y": 140,
+            "w": 200,
+            "h": 40,
+            "zIndex": 1
+        },
+        {
+            "id": "shelf_3",
+            "color": "#eceff1",
+            "x": 50,
+            "y": 280,
+            "w": 200,
+            "h": 40,
+            "zIndex": 1
+        },
+        {
+            "id": "shelf_4",
+            "color": "#eceff1",
+            "x": 350,
+            "y": 280,
+            "w": 200,
+            "h": 40,
+            "zIndex": 1
+        },
+        {
+            "id": "counter",
+            "color": "#795548",
+            "x": 600,
+            "y": 350,
+            "w": 150,
+            "h": 60,
+            "zIndex": 1
+        },
+        {
+            "id": "register",
+            "color": "#212121",
+            "x": 620,
+            "y": 330,
+            "w": 40,
+            "h": 20,
+            "zIndex": 2
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_street",
+            "x": 360,
+            "y": 580,
+            "w": 80,
+            "h": 20,
+            "interactive": "exit_grocery",
+            "label": "SAIR",
+            "color": "#fff",
+            "visible": true
+        }
+    ]
+}

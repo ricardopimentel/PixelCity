@@ -1,0 +1,92 @@
+{
+    "name": "coffee_shop",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "color": "#d7ccc8",
+            "h": 180
+        },
+        "floor": {
+            "color": "#3e2723",
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "counter",
+            "asset": "coffee_counter",
+            "x": 74,
+            "y": 130,
+            "w": 236,
+            "h": 146,
+            "zIndex": 1
+        },
+        {
+            "id": "table_1",
+            "asset": "coffee_table",
+            "x": 440,
+            "y": 240,
+            "w": 176,
+            "h": 191,
+            "zIndex": 1
+        },
+        {
+            "id": "table_2",
+            "asset": "coffee_table",
+            "x": 578,
+            "y": 376,
+            "w": 190,
+            "h": 179,
+            "zIndex": 1
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_street",
+            "x": 360,
+            "y": 580,
+            "w": 80,
+            "h": 20,
+            "interactive": "exit_coffee_shop",
+            "label": "SAIR",
+            "color": "#fff",
+            "visible": true
+        },
+        {
+            "id": "enter_kitchen",
+            "x": 0,
+            "y": 120,
+            "w": 40,
+            "h": 100,
+            "interactive": "enter_diner_kitchen",
+            "label": "COZINHA",
+            "color": "#5d4037",
+            "visible": true
+        }
+    ],
+    "hitboxes": [
+        {
+            "id": "hitboxes_1772931902770",
+            "x": 459,
+            "y": 356,
+            "w": 137,
+            "h": 50
+        },
+        {
+            "id": "hitboxes_1772931918839",
+            "x": 598,
+            "y": 483,
+            "w": 150,
+            "h": 52
+        },
+        {
+            "id": "hitboxes_1772931926541",
+            "x": 95,
+            "y": 224,
+            "w": 190,
+            "h": 42
+        }
+    ]
+}

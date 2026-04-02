@@ -1,0 +1,251 @@
+{
+    "name": "street",
+    "width": 2800,
+    "height": 600,
+    "background": {
+        "sky": {
+            "color": "#87CEEB",
+            "y": -600,
+            "h": 800
+        },
+        "floor": {
+            "asset": "street_pavement",
+            "y": 140,
+            "h": 110,
+            "scale": 0.0833
+        },
+        "road": {
+            "color": "#424242",
+            "y": 250,
+            "h": 350
+        }
+    },
+    "props": [
+        {
+            "id": "wall_base",
+            "color": "#bdbdbd",
+            "x": -1000,
+            "y": 100,
+            "w": 4800,
+            "h": 40,
+            "zIndex": -9
+        },
+        {
+            "id": "wall_top",
+            "color": "#757575",
+            "x": -1000,
+            "y": 100,
+            "w": 4800,
+            "h": 6,
+            "zIndex": -8
+        },
+        {
+            "id": "curb",
+            "color": "#616161",
+            "x": 0,
+            "y": 240,
+            "w": 2800,
+            "h": 10,
+            "zIndex": -13
+        },
+        {
+            "id": "road_lines",
+            "color": "#ffeb3b",
+            "x": 0,
+            "y": 350,
+            "w": 40,
+            "h": 10,
+            "zIndex": -1,
+            "repeatX": true,
+            "interval": 80
+        },
+        {
+            "id": "bg_far",
+            "asset": "street_bg_far",
+            "x": -1000,
+            "y": -400,
+            "w": 1000,
+            "h": 640,
+            "zIndex": -20,
+            "parallax": 0.5,
+            "repeatX": true,
+            "scale": 0.84375
+        },
+        {
+            "id": "bg_mid",
+            "asset": "street_bg_mid",
+            "x": -1000,
+            "y": -20,
+            "w": 1000,
+            "h": 394,
+            "zIndex": -10,
+            "parallax": 1.0,
+            "repeatX": true,
+            "scale": 0.40609
+        },
+        {
+            "id": "tree_1",
+            "asset": "street_tree",
+            "x": 450,
+            "y": -120,
+            "w": 200,
+            "h": 320,
+            "zIndex": 1
+        },
+        {
+            "id": "tree_2",
+            "asset": "street_tree",
+            "x": 1450,
+            "y": -120,
+            "w": 200,
+            "h": 320,
+            "zIndex": 1
+        },
+        {
+            "id": "tree_3",
+            "asset": "street_tree",
+            "x": 2600,
+            "y": -120,
+            "w": 200,
+            "h": 320,
+            "zIndex": 1
+        },
+        {
+            "id": "lamp_1",
+            "asset": "street_lamp",
+            "x": 345,
+            "y": 60,
+            "w": 90,
+            "h": 140,
+            "zIndex": 2
+        },
+        {
+            "id": "lamp_2",
+            "asset": "street_lamp",
+            "x": 1045,
+            "y": 60,
+            "w": 90,
+            "h": 140,
+            "zIndex": 2
+        },
+        {
+            "id": "lamp_3",
+            "asset": "street_lamp",
+            "x": 2045,
+            "y": 60,
+            "w": 90,
+            "h": 140,
+            "zIndex": 2
+        },
+        {
+            "id": "bldg_apt",
+            "asset": "street_apt",
+            "x": 0,
+            "y": -340,
+            "w": 420,
+            "h": 540,
+            "zIndex": -5
+        },
+        {
+            "id": "bldg_coffee",
+            "asset": "street_coffee",
+            "x": 600,
+            "y": -160,
+            "w": 300,
+            "h": 360,
+            "zIndex": -5
+        },
+        {
+            "id": "bldg_gym",
+            "asset": "street_gym",
+            "x": 1100,
+            "y": -220,
+            "w": 360,
+            "h": 420,
+            "zIndex": -5
+        },
+        {
+            "id": "bldg_plaza",
+            "asset": "street_plaza",
+            "x": 1600,
+            "y": -170,
+            "w": 450,
+            "h": 420,
+            "zIndex": -5
+        },
+        {
+            "id": "bldg_grocery",
+            "asset": "street_grocery",
+            "x": 2200,
+            "y": -160,
+            "w": 360,
+            "h": 360,
+            "zIndex": -5
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_apt",
+            "x": 50,
+            "y": 140,
+            "w": 40,
+            "h": 460,
+            "interactive": "exit_street",
+            "label": "APTOS",
+            "color": "#5d4037",
+            "visible": false
+        },
+        {
+            "id": "enter_coffee",
+            "x": 650,
+            "y": 50,
+            "w": 200,
+            "h": 550,
+            "interactive": "enter_coffee_shop",
+            "label": "CAFETERIA",
+            "color": "transparent",
+            "visible": false
+        },
+        {
+            "id": "enter_gym",
+            "x": 1150,
+            "y": 50,
+            "w": 250,
+            "h": 550,
+            "interactive": "enter_gym",
+            "label": "ACADEMIA",
+            "color": "transparent",
+            "visible": false
+        },
+        {
+            "id": "enter_plaza",
+            "x": 1700,
+            "y": 50,
+            "w": 250,
+            "h": 550,
+            "interactive": "enter_plaza",
+            "label": "PRAÇA",
+            "color": "transparent",
+            "visible": false
+        },
+        {
+            "id": "enter_grocery",
+            "x": 2250,
+            "y": 50,
+            "w": 250,
+            "h": 550,
+            "interactive": "enter_grocery",
+            "label": "MERCADO",
+            "color": "transparent",
+            "visible": false
+        }
+    ],
+    "hitboxes": [
+        {
+            "x": 0,
+            "y": -400,
+            "w": 2800,
+            "h": 540
+        }
+    ]
+}

@@ -1,0 +1,99 @@
+{
+    "name": "bedroom",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "asset": "bedroom_wall",
+            "scale": 0.25,
+            "h": 180
+        },
+        "baseboard": {
+            "color": "#f4f4f4",
+            "y": 180,
+            "h": 20
+        },
+        "floor": {
+            "asset": "bedroom_floor",
+            "scale": 0.25,
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "wardrobe",
+            "asset": "bedroom_wardrobe",
+            "x": 158,
+            "y": 19,
+            "w": 146,
+            "h": 204,
+            "zIndex": 1,
+            "interactive": "obj_wardrobe"
+        },
+        {
+            "id": "computer",
+            "asset": "bedroom_computer",
+            "x": 430,
+            "y": 96,
+            "w": 213,
+            "h": 178,
+            "zIndex": 2,
+            "interactive": "obj_computer"
+        },
+        {
+            "id": "bed",
+            "asset": "bedroom_bed",
+            "x": 291,
+            "y": 95,
+            "w": 186,
+            "h": 217,
+            "zIndex": 1,
+            "interactive": "obj_bed"
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_living",
+            "x": 80,
+            "y": 50,
+            "w": 80,
+            "h": 150,
+            "interactive": "exit_bedroom",
+            "label": "SALA",
+            "color": "#deb887",
+            "visible": true
+        },
+        {
+            "id": "enter_bathroom",
+            "x": 640,
+            "y": 50,
+            "w": 80,
+            "h": 150,
+            "interactive": "bathroom",
+            "label": "BANHEIRO",
+            "color": "#87cefa",
+            "visible": true
+        }
+    ],
+    "hitboxes": [
+        {
+            "x": 176,
+            "y": 188,
+            "w": 105,
+            "h": 34
+        },
+        {
+            "x": 494,
+            "y": 143,
+            "w": 85,
+            "h": 82
+        },
+        {
+            "x": 324,
+            "y": 161,
+            "w": 121,
+            "h": 131
+        }
+    ]
+}
