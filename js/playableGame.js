@@ -1102,10 +1102,14 @@ class PlayableGame {
                         break;
                     case 's':
                     case 'S':
-                        if (this.isEditorMode && !this.keys.s) {
-                            console.log("--- MAP JSON EXPORT ---");
-                            console.log(JSON.stringify(this.currentMapData, null, 2));
-                            alert("Mapa exportado para o console (F12)!");
+                        if (this.isEditorMode) {
+                            if (!this.keys.s) {
+                                console.log("--- MAP JSON EXPORT ---");
+                                console.log(JSON.stringify(this.currentMapData, null, 2));
+                                alert("Mapa exportado para o console (F12)!");
+                                this.keys.s = true;
+                            }
+                        } else {
                             this.keys.s = true;
                         }
                         break;
@@ -1264,6 +1268,8 @@ class PlayableGame {
                     this.keys.c = false;
                 } else if (e.key === 'k' || e.key === 'K') {
                     this.keys.k = false;
+                } else if (e.key === 's' || e.key === 'S') {
+                    this.keys.s = false;
                 } else if (this.keys.hasOwnProperty(e.key)) {
                     this.keys[e.key] = false;
                 }
@@ -1281,7 +1287,7 @@ class PlayableGame {
             const handleSize = 8;
 
             // 1. Check if we clicked a resize handle of the ALREADY selected object
-            if (this.editorSelectedObject && this.editorSelectedCategory !== 'world') {
+            if (this.editorSelectedObject && this.editorSelectedCategory !== 'world' && this.editorSelectedCategory !== 'npcs') {
                 const obj = this.editorSelectedObject;
                 const w = obj.w || 20;
                 const h = obj.h || 20;
@@ -1308,11 +1314,20 @@ class PlayableGame {
             if (this.editorSelectedCategory === 'props') pool = this.currentMapData.props || [];
             else if (this.editorSelectedCategory === 'doors') pool = this.currentMapData.doors || [];
             else if (this.editorSelectedCategory === 'hitboxes') pool = this.currentMapData.hitboxes || [];
+            else if (this.editorSelectedCategory === 'npcs') {
+                pool = (this.npcData && this.npcData.story_npcs) ? this.npcData.story_npcs.filter(npc => (npc.initial_room || 'street') === this.currentRoom) : [];
+            }
 
-            const clicked = [...pool].reverse().find(p =>
-                mouseX >= p.x && mouseX <= p.x + (p.w || 20) &&
-                mouseY >= p.y && mouseY <= p.y + (p.h || 20)
-            );
+            const clicked = [...pool].reverse().find(p => {
+                if (this.editorSelectedCategory === 'npcs') {
+                    // For NPCs, they are centered on x and go upwards from y
+                    return mouseX >= p.x - 20 && mouseX <= p.x + 20 &&
+                           mouseY >= p.y - 120 && mouseY <= p.y;
+                } else {
+                    return mouseX >= p.x && mouseX <= p.x + (p.w || 20) &&
+                           mouseY >= p.y && mouseY <= p.y + (p.h || 20);
+                }
+            });
 
             if (clicked) {
                 this.editorSelectedObject = clicked;
@@ -1369,6 +1384,15 @@ class PlayableGame {
             } else if (this.editorIsDragging) {
                 obj.x = Math.round(mouseX - this.dragOffset.x);
                 obj.y = Math.round(mouseY - this.dragOffset.y);
+
+                // Sync live NPC position immediately so the user sees it move in the editor!
+                if (this.editorSelectedCategory === 'npcs') {
+                    let liveNpc = this.npcs.find(n => n.id === obj.id);
+                    if (liveNpc) {
+                        liveNpc.x = obj.x;
+                        liveNpc.y = obj.y;
+                    }
+                }
                 this.updateEditorPropertyFields();
             }
         });
@@ -5050,6 +5074,261 @@ class PlayableGame {
         }
     }
 
+    drawSingleProp(prop) {
+        if (!this.currentMapData) return;
+        const w = this.currentMapData.width || 800;
+
+        this.ctx.save();
+
+        // Parallax logic: 1.0 means moves with camera (standard), 0.5 means half speed, etc.
+        let drawX = prop.x;
+        if (prop.parallax !== undefined) {
+            drawX += this.camera.x * (1 - prop.parallax);
+        }
+
+        // Custom dynamic render for the roadblock gate
+        if (prop.id === 'roadblock_gate') {
+            const isClothingMissionActive = this.currentMissionId === 'm05_banho_de_loja' || this.currentMissionId === 'm06_a_grande_festa';
+            const isClothingMissionDone = this.completedMissions.includes('m05_banho_de_loja') || this.completedMissions.includes('m06_a_grande_festa');
+            const isRentPaid = this.completedMissions.includes('m04_suor_e_lagrimas') || (this.characterState && this.characterState.rentPaid);
+            const isUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
+
+            if (isUnlocked) {
+                this.ctx.restore();
+                return; // Skip rendering completely!
+            }
+
+            // Se houver asset selecionado, não faz o desenho do portão cinza/vermelho padrão.
+            // Em vez disso, deixa cair (fall through) para desenhar o asset customizado selecionado.
+            if (prop.asset && this.envAssets[prop.asset]) {
+                // Do nothing, let it fall through
+            } else {
+                // Draw a beautiful dark gray metallic gate/fence
+                this.ctx.fillStyle = '#4f5d75'; // sleek slate gray
+                this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
+                
+                // Dark border
+                this.ctx.strokeStyle = '#2d3748';
+                this.ctx.lineWidth = 4;
+                this.ctx.strokeRect(drawX, prop.y, prop.w, prop.h);
+                
+                // Draw diagonal stripe details on it (construction feel!)
+                this.ctx.strokeStyle = '#ef4444'; // red warning color
+                this.ctx.lineWidth = 6;
+                this.ctx.beginPath();
+                for (let sy = prop.y + 20; sy < prop.y + prop.h; sy += 40) {
+                    this.ctx.moveTo(drawX, sy);
+                    this.ctx.lineTo(drawX + prop.w, sy + 20);
+                }
+                this.ctx.stroke();
+
+                // Draw a small "Bloqueado" warning sign in the middle
+                const labelY = prop.y + prop.h / 2;
+                this.ctx.fillStyle = '#ef4444';
+                this.ctx.fillRect(drawX - 35, labelY - 20, 100, 40);
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(drawX - 35, labelY - 20, 100, 40);
+
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = 'bold 9px monospace';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('ACESSO', drawX + 15, labelY - 5);
+                this.ctx.fillText('BLOQUEADO', drawX + 15, labelY + 10);
+                
+                this.ctx.restore();
+                return;
+            }
+        }
+
+        if (prop.asset && this.envAssets[prop.asset]) {
+            const img = this.envAssets[prop.asset];
+            const scale = prop.scale || 1.0;
+
+            if (prop.repeatX) {
+                const pattern = this.ctx.createPattern(img, 'repeat-x');
+                const matrix = new DOMMatrix();
+                // We translate the pattern to match the prop's world position
+                matrix.translateSelf(drawX, prop.y);
+                matrix.scaleSelf(scale, scale);
+                pattern.setTransform(matrix);
+
+                this.ctx.fillStyle = pattern;
+                // Fill the entire width to ensure background tiling
+                this.ctx.fillRect(-1000, prop.y, w + 2000, (prop.h || img.height) * scale);
+            } else {
+                const dw = (prop.w || img.width) * scale;
+                const dh = (prop.h || img.height) * scale;
+                this.ctx.drawImage(img, drawX, prop.y, dw, dh);
+            }
+        } else if (prop.type === 'fountain') {
+            const scale = prop.scale || 1.0;
+            const sw = (prop.w || 160) * scale;
+            const sh = (prop.h || 160) * scale;
+            this.ctx.fillStyle = '#607d8b';
+            this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2, 0, Math.PI * 2); this.ctx.fill();
+            this.ctx.fillStyle = '#29b6f6';
+            this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2 * 0.75, 0, Math.PI * 2); this.ctx.fill();
+        } else if (prop.type === 'foliage') {
+            const scale = prop.scale || 1.0;
+            const sw = (prop.w || 40) * scale;
+            const sh = (prop.h || 60) * scale;
+            this.ctx.fillStyle = '#5d4037';
+            this.ctx.fillRect(drawX, prop.y, sw / 2, sh);
+            this.ctx.fillStyle = '#388e3c';
+            this.ctx.beginPath();
+            this.ctx.arc(drawX + sw / 4, prop.y - sh / 6, sw, 0, Math.PI * 2);
+            this.ctx.fill();
+        } else if (prop.type === 'tiles') {
+            const size = prop.tileSize || 32;
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.rect(drawX, prop.y, prop.w, prop.h);
+            this.ctx.clip();
+
+            this.ctx.strokeStyle = prop.borderColor || 'rgba(0,0,0,0.1)';
+            this.ctx.lineWidth = 1;
+
+            for (let ty = prop.y; ty < prop.y + prop.h; ty += size) {
+                for (let tx = drawX; tx < drawX + prop.w; tx += size) {
+                    this.ctx.fillStyle = prop.color || '#fff';
+                    this.ctx.fillRect(tx, ty, size, size);
+                    this.ctx.strokeRect(tx, ty, size, size);
+                }
+            }
+            this.ctx.restore();
+        } else if (prop.type === 'fridge') {
+            // Fridge Body
+            this.ctx.fillStyle = prop.color || '#f8f8f8';
+            this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
+            // Door separation line
+            this.ctx.strokeStyle = '#ccc';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(drawX, prop.y + prop.h * 0.35);
+            this.ctx.lineTo(drawX + prop.w, prop.y + prop.h * 0.35);
+            this.ctx.stroke();
+            // Handles
+            this.ctx.fillStyle = '#9e9e9e';
+            this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.15, 5, 25);
+            this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.45, 5, 40);
+            // Feet
+            this.ctx.fillStyle = '#424242';
+            this.ctx.fillRect(drawX + 5, prop.y + prop.h, 10, 4);
+            this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h, 10, 4);
+        } else if (prop.type === 'stove') {
+            // Body
+            this.ctx.fillStyle = prop.color || '#e0e0e0';
+            this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
+            // Top (gray)
+            this.ctx.fillStyle = '#757575';
+            this.ctx.fillRect(drawX, prop.y, prop.w, 15);
+            // Oven window
+            this.ctx.fillStyle = '#212121';
+            this.ctx.fillRect(drawX + 8, prop.y + 40, prop.w - 16, prop.h - 55);
+            // Knobs
+            this.ctx.fillStyle = '#424242';
+            for (let i = 0; i < 4; i++) {
+                this.ctx.beginPath();
+                this.ctx.arc(drawX + 15 + i * (prop.w - 25) / 3, prop.y + 25, 4, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            // Handle
+            this.ctx.fillStyle = '#9e9e9e';
+            this.ctx.fillRect(drawX + 10, prop.y + 45, prop.w - 20, 5);
+        } else if (prop.type === 'sink_kitchen') {
+            // Countertop
+            this.ctx.fillStyle = prop.color || '#bdbdbd';
+            this.ctx.fillRect(drawX, prop.y, prop.w, 15);
+            // Cabinet
+            this.ctx.fillStyle = '#a1887f';
+            this.ctx.fillRect(drawX + 5, prop.y + 15, prop.w - 10, prop.h - 15);
+            // Basin area
+            this.ctx.fillStyle = '#cfd8dc';
+            this.ctx.fillRect(drawX + 15, prop.y + 2, prop.w * 0.4, 10);
+            // Faucet
+            this.ctx.fillStyle = '#9e9e9e';
+            this.ctx.fillRect(drawX + 25, prop.y - 12, 4, 15);
+            this.ctx.fillRect(drawX + 15, prop.y - 12, 12, 4);
+        } else {
+            this.ctx.fillStyle = prop.color || '#f0f';
+            if (prop.repeatX && prop.interval) {
+                const startX = prop.x;
+                const endX = w + 1000;
+                for (let xi = startX; xi < endX; xi += prop.interval) {
+                    let dx = xi;
+                    if (prop.parallax !== undefined) {
+                        dx += this.camera.x * (1 - prop.parallax);
+                    }
+                    this.ctx.fillRect(dx, prop.y, prop.w || 50, prop.h || 50);
+                }
+            } else {
+                this.ctx.fillRect(drawX, prop.y, prop.w || 50, prop.h || 50);
+            }
+        }
+
+        // --- DECORATIONS & OVERLAYS ---
+
+        // Progress Bar (for things like the sink)
+        if (prop.showProgress && this.sinkState === 'clean') {
+            const barW = (prop.w || 50) * 0.8;
+            const barH = 10;
+            const barX = drawX + ((prop.w || 50) - barW) / 2;
+            const barY = prop.y - 20;
+            const progress = 1 - (this.sinkTimer / this.sinkDuration);
+
+            this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            this.ctx.fillRect(barX, barY, barW, barH);
+            this.ctx.fillStyle = '#00e676';
+            this.ctx.fillRect(barX, barY, barW * progress, barH);
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.strokeRect(barX, barY, barW, barH);
+        }
+
+        // Highlight if selected in Editor
+        if (this.isEditorMode && this.selectedProp === prop) {
+            this.ctx.strokeStyle = '#00ff00';
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(drawX - 2, prop.y - 2, (prop.w || 50) + 4, (prop.h || 50) + 4);
+
+            // Draw interaction range if interactive
+            if (prop.interactive) {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(0, 191, 255, 0.5)';
+                this.ctx.setLineDash([10, 5]);
+                this.ctx.lineWidth = 2;
+                const centerX = drawX + (prop.w || 50) / 2;
+                const centerY = prop.y + (prop.h || 50) / 2;
+                const marginX = (prop.w || 50) / 2 + 30;
+                const marginY = (prop.h || 50) / 2 + 30;
+                this.ctx.strokeRect(centerX - marginX, centerY - marginY, marginX * 2, marginY * 2);
+                this.ctx.restore();
+            }
+
+            // Draw info
+            this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            this.ctx.fillRect(drawX, prop.y - 25, 80, 20);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '10px monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(`${Math.round(prop.x)},${Math.round(prop.y)}`, drawX + 40, prop.y - 11);
+        }
+
+        // Draw Interaction Icon for all interactive props in Editor Mode
+        if (this.isEditorMode && prop.interactive) {
+            this.ctx.fillStyle = '#00bfff';
+            this.ctx.beginPath();
+            this.ctx.arc(drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2, 12, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('!', drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2 + 5);
+        }
+
+        this.ctx.restore();
+    }
+
     drawMap() {
         if (!this.currentMapData) return;
 
@@ -5151,292 +5430,51 @@ class PlayableGame {
             });
         }
 
-        // 5. Props (Sorted by zIndex)
+        // 5. Props com Z-Index negativo (decorações puramente de fundo)
         const props = [...(data.props || [])].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
         props.forEach(prop => {
-            this.ctx.save();
-
-            // Parallax logic: 1.0 means moves with camera (standard), 0.5 means half speed, etc.
-            // But usually parallax is defined as "scroll speed relative to background"
-            // Let's stick to a simple formula: offsetX = camera.x * (1 - parallaxFactor)
-            let drawX = prop.x;
-            if (prop.parallax !== undefined) {
-                drawX += this.camera.x * (1 - prop.parallax);
+            if ((prop.zIndex || 0) < 0) {
+                this.drawSingleProp(prop);
             }
-
-            // Custom dynamic render for the roadblock gate
-            if (prop.id === 'roadblock_gate') {
-                const isClothingMissionActive = this.currentMissionId === 'm05_banho_de_loja' || this.currentMissionId === 'm06_a_grande_festa';
-                const isClothingMissionDone = this.completedMissions.includes('m05_banho_de_loja') || this.completedMissions.includes('m06_a_grande_festa');
-                const isRentPaid = this.completedMissions.includes('m04_suor_e_lagrimas') || (this.characterState && this.characterState.rentPaid);
-                const isUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
-
-                if (isUnlocked) {
-                    this.ctx.restore();
-                    return; // Skip rendering completely!
-                }
-
-                // Se houver asset selecionado, não faz o desenho do portão cinza/vermelho padrão.
-                // Em vez disso, deixa cair (fall through) para desenhar o asset customizado selecionado.
-                if (prop.asset && this.envAssets[prop.asset]) {
-                    // Do nothing, let it fall through
-                } else {
-                    // Draw a beautiful dark gray metallic gate/fence
-                    this.ctx.fillStyle = '#4f5d75'; // sleek slate gray
-                    this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
-                    
-                    // Dark border
-                    this.ctx.strokeStyle = '#2d3748';
-                    this.ctx.lineWidth = 4;
-                    this.ctx.strokeRect(drawX, prop.y, prop.w, prop.h);
-                    
-                    // Draw diagonal stripe details on it (construction feel!)
-                    this.ctx.strokeStyle = '#ef4444'; // red warning color
-                    this.ctx.lineWidth = 6;
-                    this.ctx.beginPath();
-                    for (let sy = prop.y + 20; sy < prop.y + prop.h; sy += 40) {
-                        this.ctx.moveTo(drawX, sy);
-                        this.ctx.lineTo(drawX + prop.w, sy + 20);
-                    }
-                    this.ctx.stroke();
-
-                    // Draw a small "Bloqueado" warning sign in the middle
-                    const labelY = prop.y + prop.h / 2;
-                    this.ctx.fillStyle = '#ef4444';
-                    this.ctx.fillRect(drawX - 35, labelY - 20, 100, 40);
-                    this.ctx.strokeStyle = '#fff';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.strokeRect(drawX - 35, labelY - 20, 100, 40);
-
-                    this.ctx.fillStyle = '#fff';
-                    this.ctx.font = 'bold 9px monospace';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText('ACESSO', drawX + 15, labelY - 5);
-                    this.ctx.fillText('BLOQUEADO', drawX + 15, labelY + 10);
-                    
-                    this.ctx.restore();
-                    return;
-                }
-            }
-
-            if (prop.asset && this.envAssets[prop.asset]) {
-                const img = this.envAssets[prop.asset];
-                const scale = prop.scale || 1.0;
-
-                if (prop.repeatX) {
-                    const pattern = this.ctx.createPattern(img, 'repeat-x');
-                    const matrix = new DOMMatrix();
-                    // We translate the pattern to match the prop's world position
-                    matrix.translateSelf(drawX, prop.y);
-                    matrix.scaleSelf(scale, scale);
-                    pattern.setTransform(matrix);
-
-                    this.ctx.fillStyle = pattern;
-                    // Fill the entire width to ensure background tiling
-                    this.ctx.fillRect(-1000, prop.y, w + 2000, (prop.h || img.height) * scale);
-                } else {
-                    const dw = (prop.w || img.width) * scale;
-                    const dh = (prop.h || img.height) * scale;
-                    this.ctx.drawImage(img, drawX, prop.y, dw, dh);
-                }
-            } else if (prop.type === 'fountain') {
-                const scale = prop.scale || 1.0;
-                const sw = (prop.w || 160) * scale;
-                const sh = (prop.h || 160) * scale;
-                this.ctx.fillStyle = '#607d8b';
-                this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2, 0, Math.PI * 2); this.ctx.fill();
-                this.ctx.fillStyle = '#29b6f6';
-                this.ctx.beginPath(); this.ctx.arc(drawX + sw / 2, prop.y + sh / 2, sw / 2 * 0.75, 0, Math.PI * 2); this.ctx.fill();
-            } else if (prop.type === 'foliage') {
-                const scale = prop.scale || 1.0;
-                const sw = (prop.w || 40) * scale;
-                const sh = (prop.h || 60) * scale;
-                this.ctx.fillStyle = '#5d4037';
-                this.ctx.fillRect(drawX, prop.y, sw / 2, sh);
-                this.ctx.fillStyle = '#388e3c';
-                this.ctx.beginPath();
-                this.ctx.arc(drawX + sw / 4, prop.y - sh / 6, sw, 0, Math.PI * 2);
-                this.ctx.fill();
-            } else if (prop.type === 'tiles') {
-                const size = prop.tileSize || 32;
-                this.ctx.save();
-                this.ctx.beginPath();
-                this.ctx.rect(drawX, prop.y, prop.w, prop.h);
-                this.ctx.clip();
-
-                this.ctx.strokeStyle = prop.borderColor || 'rgba(0,0,0,0.1)';
-                this.ctx.lineWidth = 1;
-
-                for (let ty = prop.y; ty < prop.y + prop.h; ty += size) {
-                    for (let tx = drawX; tx < drawX + prop.w; tx += size) {
-                        this.ctx.fillStyle = prop.color || '#fff';
-                        this.ctx.fillRect(tx, ty, size, size);
-                        this.ctx.strokeRect(tx, ty, size, size);
-                    }
-                }
-                this.ctx.restore();
-            } else if (prop.type === 'fridge') {
-                // Fridge Body
-                this.ctx.fillStyle = prop.color || '#f8f8f8';
-                this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
-                // Door separation line
-                this.ctx.strokeStyle = '#ccc';
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.moveTo(drawX, prop.y + prop.h * 0.35);
-                this.ctx.lineTo(drawX + prop.w, prop.y + prop.h * 0.35);
-                this.ctx.stroke();
-                // Handles
-                this.ctx.fillStyle = '#9e9e9e';
-                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.15, 5, 25);
-                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h * 0.45, 5, 40);
-                // Feet
-                this.ctx.fillStyle = '#424242';
-                this.ctx.fillRect(drawX + 5, prop.y + prop.h, 10, 4);
-                this.ctx.fillRect(drawX + prop.w - 15, prop.y + prop.h, 10, 4);
-            } else if (prop.type === 'stove') {
-                // Body
-                this.ctx.fillStyle = prop.color || '#e0e0e0';
-                this.ctx.fillRect(drawX, prop.y, prop.w, prop.h);
-                // Top (gray)
-                this.ctx.fillStyle = '#757575';
-                this.ctx.fillRect(drawX, prop.y, prop.w, 15);
-                // Oven window
-                this.ctx.fillStyle = '#212121';
-                this.ctx.fillRect(drawX + 8, prop.y + 40, prop.w - 16, prop.h - 55);
-                // Knobs
-                this.ctx.fillStyle = '#424242';
-                for (let i = 0; i < 4; i++) {
-                    this.ctx.beginPath();
-                    this.ctx.arc(drawX + 15 + i * (prop.w - 25) / 3, prop.y + 25, 4, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-                // Handle
-                this.ctx.fillStyle = '#9e9e9e';
-                this.ctx.fillRect(drawX + 10, prop.y + 45, prop.w - 20, 5);
-            } else if (prop.type === 'sink_kitchen') {
-                // Countertop
-                this.ctx.fillStyle = prop.color || '#bdbdbd';
-                this.ctx.fillRect(drawX, prop.y, prop.w, 15);
-                // Cabinet
-                this.ctx.fillStyle = '#a1887f';
-                this.ctx.fillRect(drawX + 5, prop.y + 15, prop.w - 10, prop.h - 15);
-                // Basin area
-                this.ctx.fillStyle = '#cfd8dc';
-                this.ctx.fillRect(drawX + 15, prop.y + 2, prop.w * 0.4, 10);
-                // Faucet
-                this.ctx.fillStyle = '#9e9e9e';
-                this.ctx.fillRect(drawX + 25, prop.y - 12, 4, 15);
-                this.ctx.fillRect(drawX + 15, prop.y - 12, 12, 4);
-            } else {
-                this.ctx.fillStyle = prop.color || '#f0f';
-                if (prop.repeatX && prop.interval) {
-                    const startX = prop.x;
-                    const endX = w + 1000;
-                    for (let xi = startX; xi < endX; xi += prop.interval) {
-                        let dx = xi;
-                        if (prop.parallax !== undefined) {
-                            dx += this.camera.x * (1 - prop.parallax);
-                        }
-                        this.ctx.fillRect(dx, prop.y, prop.w || 50, prop.h || 50);
-                    }
-                } else {
-                    this.ctx.fillRect(drawX, prop.y, prop.w || 50, prop.h || 50);
-                }
-            }
-            // --- DECORATIONS & OVERLAYS ---
-
-            // Progress Bar (for things like the sink)
-            if (prop.showProgress && this.sinkState === 'clean') {
-                const barW = (prop.w || 50) * 0.8;
-                const barH = 10;
-                const barX = drawX + ((prop.w || 50) - barW) / 2;
-                const barY = prop.y - 20;
-                const progress = 1 - (this.sinkTimer / this.sinkDuration);
-
-                this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                this.ctx.fillRect(barX, barY, barW, barH);
-                this.ctx.fillStyle = '#00e676';
-                this.ctx.fillRect(barX, barY, barW * progress, barH);
-                this.ctx.strokeStyle = '#fff';
-                this.ctx.strokeRect(barX, barY, barW, barH);
-            }
-
-            // Highlight if selected in Editor
-            if (this.isEditorMode && this.selectedProp === prop) {
-                this.ctx.strokeStyle = '#00ff00';
-                this.ctx.lineWidth = 3;
-                this.ctx.strokeRect(drawX - 2, prop.y - 2, (prop.w || 50) + 4, (prop.h || 50) + 4);
-
-                // Draw interaction range if interactive
-                if (prop.interactive) {
-                    this.ctx.save();
-                    this.ctx.strokeStyle = 'rgba(0, 191, 255, 0.5)';
-                    this.ctx.setLineDash([10, 5]);
-                    this.ctx.lineWidth = 2;
-                    const centerX = drawX + (prop.w || 50) / 2;
-                    const centerY = prop.y + (prop.h || 50) / 2;
-                    const marginX = (prop.w || 50) / 2 + 30;
-                    const marginY = (prop.h || 50) / 2 + 30;
-                    this.ctx.strokeRect(centerX - marginX, centerY - marginY, marginX * 2, marginY * 2);
-                    this.ctx.restore();
-                }
-
-                // Draw info
-                this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                this.ctx.fillRect(drawX, prop.y - 25, 80, 20);
-                this.ctx.fillStyle = '#fff';
-                this.ctx.font = '10px monospace';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText(`${Math.round(prop.x)},${Math.round(prop.y)}`, drawX + 40, prop.y - 11);
-            }
-
-            // Draw Interaction Icon for all interactive props in Editor Mode
-            if (this.isEditorMode && prop.interactive) {
-                this.ctx.fillStyle = '#00bfff';
-                this.ctx.beginPath();
-                this.ctx.arc(drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2, 12, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.fillStyle = 'white';
-                this.ctx.font = 'bold 14px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('!', drawX + (prop.w || 50) / 2, prop.y + (prop.h || 50) / 2 + 5);
-            }
-
-            this.ctx.restore();
         });
 
         // --- EDITOR HIGHLIGHT & HANDLES ---
         if (this.isEditorMode && this.editorSelectedObject) {
             const obj = this.editorSelectedObject;
-            const w = obj.w || 20;
-            const h = obj.h || 20;
 
             this.ctx.save();
             this.ctx.strokeStyle = '#00ff00';
             this.ctx.setLineDash([5, 5]);
             this.ctx.lineWidth = 2;
-            this.ctx.strokeRect(obj.x, obj.y, w, h);
 
-            // Resize Handles (Bolinhas nos cantos)
-            if (this.editorSelectedCategory !== 'world') {
-                this.ctx.setLineDash([]);
-                this.ctx.fillStyle = 'white';
-                this.ctx.strokeStyle = '#000';
-                this.ctx.lineWidth = 1;
-                const hSize = 5;
-                const corners = [
-                    { x: obj.x, y: obj.y },
-                    { x: obj.x + w, y: obj.y },
-                    { x: obj.x, y: obj.y + h },
-                    { x: obj.x + w, y: obj.y + h }
-                ];
-                corners.forEach(pos => {
-                    this.ctx.beginPath();
-                    this.ctx.arc(pos.x, pos.y, hSize, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    this.ctx.stroke();
-                });
+            if (this.editorSelectedCategory === 'npcs') {
+                // Para NPCs, desenhar highlight centralizado na base dos pés do personagem
+                this.ctx.strokeRect(obj.x - 20, obj.y - 120, 40, 120);
+            } else {
+                const w = obj.w || 20;
+                const h = obj.h || 20;
+                this.ctx.strokeRect(obj.x, obj.y, w, h);
+
+                // Resize Handles (Bolinhas nos cantos)
+                if (this.editorSelectedCategory !== 'world') {
+                    this.ctx.setLineDash([]);
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    const hSize = 5;
+                    const corners = [
+                        { x: obj.x, y: obj.y },
+                        { x: obj.x + w, y: obj.y },
+                        { x: obj.x, y: obj.y + h },
+                        { x: obj.x + w, y: obj.y + h }
+                    ];
+                    corners.forEach(pos => {
+                        this.ctx.beginPath();
+                        this.ctx.arc(pos.x, pos.y, hSize, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.stroke();
+                    });
+                }
             }
 
             // Interaction range for doors/objects
@@ -5867,6 +5905,45 @@ class PlayableGame {
             });
         }
 
+        // Collect ground-level props (zIndex >= 0) and add them to dynamic z-sorting
+        if (this.currentMapData && this.currentMapData.props) {
+            this.currentMapData.props.forEach(prop => {
+                if ((prop.zIndex || 0) >= 0) {
+                    const scale = prop.scale || 1.0;
+                    let baseWidth = prop.w || 50;
+                    let baseHeight = prop.h || 50;
+                    if (prop.asset && this.envAssets[prop.asset]) {
+                        const img = this.envAssets[prop.asset];
+                        baseWidth = prop.w || img.width;
+                        baseHeight = prop.h || img.height;
+                    }
+
+                    // Apply parallax to culling position if defined
+                    let drawX = prop.x;
+                    if (prop.parallax !== undefined) {
+                        drawX += this.camera.x * (1 - prop.parallax);
+                    }
+
+                    const dw = baseWidth * scale;
+                    const dh = baseHeight * scale;
+
+                    if (prop.repeatX) {
+                        entities.push({
+                            type: 'prop',
+                            y: prop.y + dh, // base of the prop
+                            entity: prop
+                        });
+                    } else if (drawX + dw > camLeft && drawX < camRight && prop.y + dh > camTop && prop.y < camBottom) {
+                        entities.push({
+                            type: 'prop',
+                            y: prop.y + dh, // base of the prop
+                            entity: prop
+                        });
+                    }
+                }
+            });
+        }
+
         // Sort ascending by Y (lowest Y is further away, drawn first -> behind)
         entities.sort((a, b) => a.y - b.y);
 
@@ -5883,6 +5960,11 @@ class PlayableGame {
                 // Sombra centralizada na base do ônibus
                 this.drawShadow(this.bus.x, this.bus.y + (this.bus.yOffset || 0), 380);
                 this.drawBus();
+            } else if (item.type === 'prop') {
+                this.ctx.save();
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+                this.drawSingleProp(item.entity);
+                this.ctx.restore();
             }
         });
     }
@@ -6173,17 +6255,25 @@ class PlayableGame {
             };
         });
 
-        // Add/Delete Buttons
+        // Add/Duplicate/Delete Buttons
         const btnAdd = document.getElementById('btn-editor-add');
+        const btnDuplicate = document.getElementById('btn-editor-duplicate');
         const btnDelete = document.getElementById('btn-editor-delete');
         const btnExport = document.getElementById('btn-editor-export');
 
         if (btnAdd) btnAdd.onclick = () => this.editorAddObject();
+        if (btnDuplicate) btnDuplicate.onclick = () => this.editorDuplicateObject();
         if (btnDelete) btnDelete.onclick = () => this.editorDeleteObject();
         if (btnExport) btnExport.onclick = () => {
             console.log("--- MAP JSON EXPORT ---");
             console.log(JSON.stringify(this.currentMapData, null, 2));
-            alert("JSON exportado no console (F12)!");
+            if (this.npcData && this.npcData.story_npcs) {
+                console.log("--- STORY NPCS JSON EXPORT ---");
+                console.log(JSON.stringify({ story_npcs: this.npcData.story_npcs }, null, 4));
+                alert("JSON do Mapa e dos NPCs exportados no console (F12)!");
+            } else {
+                alert("JSON exportado no console (F12)!");
+            }
         };
 
         // Alternar lado do menu do editor
@@ -6250,6 +6340,9 @@ class PlayableGame {
         if (this.editorSelectedCategory === 'props') items = this.currentMapData.props || [];
         else if (this.editorSelectedCategory === 'doors') items = this.currentMapData.doors || [];
         else if (this.editorSelectedCategory === 'hitboxes') items = this.currentMapData.hitboxes || [];
+        else if (this.editorSelectedCategory === 'npcs') {
+            items = (this.npcData && this.npcData.story_npcs) ? this.npcData.story_npcs.filter(npc => (npc.initial_room || 'street') === this.currentRoom) : [];
+        }
         else if (this.editorSelectedCategory === 'world') {
             items = [
                 { id: 'Sky', type: 'sky', data: this.currentMapData.background?.sky },
@@ -6260,7 +6353,7 @@ class PlayableGame {
 
         items.forEach((item, idx) => {
             const li = document.createElement('li');
-            li.textContent = item.id || item.interactive || `[${idx}] ${this.editorSelectedCategory}`;
+            li.textContent = item.name || item.id || item.interactive || `[${idx}] ${this.editorSelectedCategory}`;
             li.style.padding = '8px 10px';
             li.style.cursor = 'pointer';
             li.style.borderBottom = '1px solid #333';
@@ -6320,6 +6413,14 @@ class PlayableGame {
             input.oninput = (e) => {
                 const val = (type === 'number' && e.target.value !== '') ? parseFloat(e.target.value) : e.target.value;
                 target[key] = val;
+
+                // Sync live NPC position immediately when typing in X/Y fields
+                if (this.editorSelectedCategory === 'npcs' && (key === 'x' || key === 'y')) {
+                    let liveNpc = this.npcs.find(n => n.id === obj.id);
+                    if (liveNpc) {
+                        liveNpc[key] = val;
+                    }
+                }
             };
 
             div.appendChild(input);
@@ -6341,6 +6442,23 @@ class PlayableGame {
                 createField('Pos Y', 'y', 'number');
                 createField('Altura H', 'h', 'number');
             }
+            return;
+        }
+
+        if (this.editorSelectedCategory === 'npcs') {
+            createField('ID (Personagem)', 'id');
+            const inputs = container.getElementsByTagName('input');
+            if (inputs.length > 0) {
+                inputs[inputs.length - 1].readOnly = true;
+                inputs[inputs.length - 1].style.opacity = '0.6';
+            }
+            createField('Nome', 'name');
+            if (inputs.length > 0) {
+                inputs[inputs.length - 1].readOnly = true;
+                inputs[inputs.length - 1].style.opacity = '0.6';
+            }
+            createField('Posição Inicial X', 'x', 'number');
+            createField('Posição Inicial Y', 'y', 'number');
             return;
         }
 
@@ -6395,6 +6513,11 @@ class PlayableGame {
     editorAddObject() {
         if (!this.currentMapData) return;
 
+        if (this.editorSelectedCategory === 'npcs') {
+            alert("Novos personagens não podem ser criados por aqui. Use o arquivo story_npcs.json para registrar novos NPCs.");
+            return;
+        }
+
         let newObj = {
             id: this.editorSelectedCategory + "_" + Date.now(),
             x: Math.round(this.player.x),
@@ -6426,10 +6549,61 @@ class PlayableGame {
         this.updateEditorPropertyFields();
     }
 
+    editorDuplicateObject() {
+        if (!this.editorSelectedObject || !this.currentMapData) {
+            alert("Selecione um item (Prop, Porta ou Hitbox) para duplicar.");
+            return;
+        }
+        if (this.editorSelectedCategory === 'world') {
+            alert("Itens do mundo não podem ser duplicados.");
+            return;
+        }
+        if (this.editorSelectedCategory === 'npcs') {
+            alert("Personagens da história não podem ser duplicados.");
+            return;
+        }
+
+        // Cópia profunda do objeto selecionado
+        const copy = JSON.parse(JSON.stringify(this.editorSelectedObject));
+        
+        // Gerar um novo ID único seguro
+        const suffix = "_copia_" + Date.now().toString().slice(-4);
+        if (copy.id) {
+            copy.id = copy.id + suffix;
+        } else {
+            copy.id = this.editorSelectedCategory + suffix;
+        }
+
+        // Aplicar deslocamento para não sobrepor perfeitamente
+        if (copy.x !== undefined) copy.x = Math.round(copy.x + 30);
+        if (copy.y !== undefined) copy.y = Math.round(copy.y + 30);
+
+        // Adicionar na lista correspondente
+        if (this.editorSelectedCategory === 'props') {
+            if (!this.currentMapData.props) this.currentMapData.props = [];
+            this.currentMapData.props.push(copy);
+        } else if (this.editorSelectedCategory === 'doors') {
+            if (!this.currentMapData.doors) this.currentMapData.doors = [];
+            this.currentMapData.doors.push(copy);
+        } else if (this.editorSelectedCategory === 'hitboxes') {
+            if (!this.currentMapData.hitboxes) this.currentMapData.hitboxes = [];
+            this.currentMapData.hitboxes.push(copy);
+        }
+
+        // Selecionar o novo item duplicado imediatamente para edição ou arraste
+        this.editorSelectedObject = copy;
+        this.updateEditorObjectList();
+        this.updateEditorPropertyFields();
+    }
+
     editorDeleteObject() {
         if (!this.editorSelectedObject || !this.currentMapData) return;
         if (this.editorSelectedCategory === 'world') {
             alert("Itens do mundo não podem ser deletados.");
+            return;
+        }
+        if (this.editorSelectedCategory === 'npcs') {
+            alert("Personagens da história não podem ser deletados.");
             return;
         }
 

@@ -677,19 +677,21 @@
                 <select id="editor-map-select" style="width: 100%; background: #333; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; margin-bottom: 15px;"></select>
                 
                 <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-                    <button class="editor-tab active" data-tab="props" style="flex: 1; padding: 5px; background: #444; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.75rem;">Props</button>
-                    <button class="editor-tab" data-tab="doors" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.75rem;">Doors</button>
-                    <button class="editor-tab" data-tab="hitboxes" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.75rem;">Hits</button>
-                    <button class="editor-tab" data-tab="world" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.75rem;">Mundo</button>
+                    <button class="editor-tab active" data-tab="props" style="flex: 1; padding: 5px; background: #444; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.7rem;">Props</button>
+                    <button class="editor-tab" data-tab="doors" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.7rem;">Doors</button>
+                    <button class="editor-tab" data-tab="hitboxes" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.7rem;">Hits</button>
+                    <button class="editor-tab" data-tab="npcs" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.7rem;">NPCs</button>
+                    <button class="editor-tab" data-tab="world" style="flex: 1; padding: 5px; background: #222; border: none; color: white; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.7rem;">Mundo</button>
                 </div>
 
                 <div id="editor-object-list-container" style="max-height: 200px; overflow-y: auto; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; margin-bottom: 15px;">
                     <ul id="editor-object-list" style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;"></ul>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <button id="btn-editor-add" style="flex: 1; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">+ Adicionar</button>
-                    <button id="btn-editor-delete" style="flex: 1; padding: 8px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Deletar</button>
+                <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                    <button id="btn-editor-add" style="flex: 1; padding: 8px 4px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem;">+ Novo</button>
+                    <button id="btn-editor-duplicate" style="flex: 1; padding: 8px 4px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem;">Duplicar</button>
+                    <button id="btn-editor-delete" style="flex: 1; padding: 8px 4px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem;">Deletar</button>
                 </div>
 
                 <div id="editor-properties" style="border-top: 1px solid #444; padding-top: 15px;">
