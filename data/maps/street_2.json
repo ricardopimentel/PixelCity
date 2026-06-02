@@ -1,5 +1,5 @@
 {
-    "name": "street",
+    "name": "street_2",
     "width": 2800,
     "height": 600,
     "background": {
@@ -138,17 +138,8 @@
             "zIndex": 2
         },
         {
-            "id": "bldg_apt",
-            "asset": "street_apt",
-            "x": 0,
-            "y": -340,
-            "w": 420,
-            "h": 540,
-            "zIndex": -5
-        },
-        {
-            "id": "bldg_coffee",
-            "asset": "street_coffee",
+            "id": "bldg_clothing",
+            "asset": "street_building_clothes",
             "x": 600,
             "y": -160,
             "w": 300,
@@ -156,105 +147,46 @@
             "zIndex": -5
         },
         {
-            "id": "bldg_gym",
-            "asset": "street_gym",
-            "x": 1100,
-            "y": -220,
-            "w": 360,
-            "h": 420,
-            "zIndex": -5
-        },
-        {
-            "id": "bldg_plaza",
-            "asset": "street_plaza",
+            "id": "bldg_party",
+            "asset": "street_building_night_club",
             "x": 1600,
             "y": -170,
             "w": 450,
             "h": 420,
             "zIndex": -5
-        },
-        {
-            "id": "bldg_grocery",
-            "asset": "street_grocery",
-            "x": 2200,
-            "y": -160,
-            "w": 360,
-            "h": 360,
-            "zIndex": -5
-        },
-        {
-            "id": "roadblock_gate",
-            "x": 2700,
-            "y": 120,
-            "w": 30,
-            "h": 460,
-            "zIndex": 10
         }
     ],
     "doors": [
         {
-            "id": "exit_to_apt",
-            "x": 50,
-            "y": 140,
-            "w": 40,
-            "h": 460,
-            "interactive": "exit_street",
-            "label": "APTOS",
-            "color": "#5d4037",
+            "id": "exit_to_street_1",
+            "x": 0,
+            "y": 50,
+            "w": 100,
+            "h": 550,
+            "interactive": "exit_street_2",
+            "label": "VOLTAR",
+            "color": "transparent",
             "visible": false
         },
         {
-            "id": "enter_coffee",
+            "id": "enter_clothing",
             "x": 650,
             "y": 50,
             "w": 200,
             "h": 550,
-            "interactive": "enter_coffee_shop",
-            "label": "CAFETERIA",
+            "interactive": "enter_clothing_store",
+            "label": "LOJA DE ROUPAS",
             "color": "transparent",
             "visible": false
         },
         {
-            "id": "enter_gym",
-            "x": 1150,
-            "y": 50,
-            "w": 250,
-            "h": 550,
-            "interactive": "enter_gym",
-            "label": "ACADEMIA",
-            "color": "transparent",
-            "visible": false
-        },
-        {
-            "id": "enter_plaza",
+            "id": "enter_party",
             "x": 1700,
             "y": 50,
             "w": 250,
             "h": 550,
-            "interactive": "enter_plaza",
-            "label": "PRAÇA",
-            "color": "transparent",
-            "visible": false
-        },
-        {
-            "id": "enter_grocery",
-            "x": 2250,
-            "y": 50,
-            "w": 250,
-            "h": 550,
-            "interactive": "enter_grocery",
-            "label": "MERCADO",
-            "color": "transparent",
-            "visible": false
-        },
-        {
-            "id": "enter_street_2",
-            "x": 2700,
-            "y": 50,
-            "w": 100,
-            "h": 550,
-            "interactive": "enter_street_2",
-            "label": "OUTRA RUA",
+            "interactive": "enter_party_club",
+            "label": "CLUBE DE FESTA",
             "color": "transparent",
             "visible": false
         }

@@ -667,8 +667,9 @@
 
         <!-- Painel do Editor de Mapas -->
         <div id="map-editor-panel" style="display: none; position: absolute; top: 60px; right: 0; width: 300px; height: calc(100% - 60px); background: rgba(0, 0, 0, 0.85); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; overflow-y: auto; z-index: 1000; border-left: 2px solid #444; backdrop-filter: blur(5px);">
-            <div style="padding: 15px; border-bottom: 1px solid #444; background: #222;">
+            <div style="padding: 15px; border-bottom: 1px solid #444; background: #222; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; font-size: 1.2rem; color: #fff;">Map Editor</h2>
+                <button id="btn-editor-toggle-side" style="background: none; border: 1px solid #555; color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;">👈 Mudar Lado</button>
             </div>
             
             <div style="padding: 15px;">
@@ -698,9 +699,11 @@
                     </div>
                 </div>
 
-                <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px; text-align: center;">
+                <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px; text-align: center; display: flex; flex-direction: column; gap: 8px;">
                     <button id="btn-editor-export" style="width: 100%; padding: 10px; background: #6c5ce7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar JSON (Console)</button>
-                    <p style="font-size: 0.7rem; color: #888; margin-top: 10px;">Pressione 'E' para desativar o modo editor.</p>
+                    <input type="file" id="input-editor-import-asset" accept="image/png" multiple style="display: none;">
+                    <button id="btn-editor-import-asset" style="width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;">📥 Importar Sprites (.png)</button>
+                    <p style="font-size: 0.7rem; color: #888; margin-top: 5px;">Pressione 'E' para desativar o modo editor.</p>
                 </div>
             </div>
         </div>

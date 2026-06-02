@@ -144,12 +144,12 @@
         },
         {
             "id": "m05_banho_de_loja",
-            "title": "Deixando o Passado pra Trás",
+            "title": "Comprar Roupas e Encontrar o Lucas",
             "trigger": {
                 "type": "mission_completed",
                 "target": "m04_suor_e_lagrimas"
             },
-            "mentor_message": "Aluguel garantido! Parabéns. Mas olha, vai ter uma festa de inauguração de um novo clube aqui no bairro hoje à noite, e com essa sua roupa de quem acabou de descer da caçamba do caminhão, os seguranças não vão te deixar passar da porta. Passa na loja de roupas que acabou de abrir e compra uma camisa nova. Depois me encontra na porta da festa!",
+            "mentor_message": "Aluguel garantido! Parabéns. Hoje à noite rola a festa de inauguração do novo clube. Com essa roupa, você não entra de jeito nenhum! Vá até a loja de roupas na segunda rua, compre uma camisa nova e depois me encontre bem na frente do clube da festa. Estou te esperando lá!",
             "tasks": [
                 {
                     "id": "t1",
@@ -173,6 +173,40 @@
             "rewards": {
                 "popularity": 20,
                 "unlock_location": "neighborhood_party"
+            }
+        },
+        {
+            "id": "m06_a_grande_festa",
+            "title": "A Grande Festa",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m05_banho_de_loja"
+            },
+            "mentor_message": "Caramba, você ficou bonitão com essa camisa nova! Os seguranças nem piscaram pra te deixar entrar. A festa tá animal, cheia de luzes e som alto. Mas ó, não viemos aqui só pra beber refrigerante quente não. O seu objetivo hoje é expandir sua rede de contatos em Pixel City. Tenta conversar com as pessoas aqui e fazer amizade. Aproveita e dá uma dançada na pista pra mostrar seu charme!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "interact_object",
+                    "target": "party_dance_floor",
+                    "description": "Dance na pista de dança com as luzes neon."
+                },
+                {
+                    "id": "t2",
+                    "type": "interact_object",
+                    "target": "party_drinks_bar",
+                    "description": "Pegue uma bebida de frutas gelada no bar."
+                },
+                {
+                    "id": "t3",
+                    "type": "npc_relationship",
+                    "target": "npc_dj",
+                    "value": 20,
+                    "description": "Converse com o DJ Marcelo até atingir 20% de amizade."
+                }
+            ],
+            "rewards": {
+                "popularity": 50,
+                "money": 300
             }
         }
     ]

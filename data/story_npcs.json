@@ -161,6 +161,114 @@
                     "color": "#000000"
                 }
             }
+        },
+        {
+            "id": "npc_dj",
+            "name": "DJ Marcelo",
+            "gender": "male",
+            "orientation": "heterosexual",
+            "friendship": 0,
+            "romanced": false,
+            "recentTopics": [],
+            "contactAdded": false,
+            "interests": [
+                "music",
+                "tech",
+                "humor"
+            ],
+            "isPaused": true,
+            "initial_room": "neighborhood_party",
+            "x": 400,
+            "y": 150,
+            "speed": 0,
+            "direction": 0,
+            "frame": 0,
+            "animTimer": 0,
+            "face": {
+                "pendingType": null,
+                "isAnimating": false,
+                "currentFrame": 0,
+                "type": "smile",
+                "cycles": 0
+            },
+            "chatBubble": null,
+            "state": {
+                "skinColor": "#f1c27d",
+                "body": {
+                    "index": 0,
+                    "color": null
+                },
+                "hair": {
+                    "index": 5,
+                    "color": "#000000"
+                },
+                "torso": {
+                    "index": 2,
+                    "color": "#1dd1a1"
+                },
+                "legs": {
+                    "index": 1,
+                    "color": "#2c3e50"
+                },
+                "feet": {
+                    "index": 2,
+                    "color": "#000000"
+                }
+            }
+        },
+        {
+            "id": "npc_guest",
+            "name": "Ronaldo",
+            "gender": "male",
+            "orientation": "heterosexual",
+            "friendship": 0,
+            "romanced": false,
+            "recentTopics": [],
+            "contactAdded": false,
+            "interests": [
+                "sports",
+                "travel",
+                "gaming"
+            ],
+            "isPaused": true,
+            "initial_room": "neighborhood_party",
+            "x": 200,
+            "y": 320,
+            "speed": 0,
+            "direction": 2,
+            "frame": 0,
+            "animTimer": 0,
+            "face": {
+                "pendingType": null,
+                "isAnimating": false,
+                "currentFrame": 0,
+                "type": "static",
+                "cycles": 0
+            },
+            "chatBubble": null,
+            "state": {
+                "skinColor": "#ffdbac",
+                "body": {
+                    "index": 0,
+                    "color": null
+                },
+                "hair": {
+                    "index": 2,
+                    "color": "#d35400"
+                },
+                "torso": {
+                    "index": 7,
+                    "color": "#3498db"
+                },
+                "legs": {
+                    "index": 4,
+                    "color": "#7f8c8d"
+                },
+                "feet": {
+                    "index": 0,
+                    "color": "#000000"
+                }
+            }
         }
     ]
 }

@@ -1,0 +1,77 @@
+{
+    "name": "neighborhood_party",
+    "width": 800,
+    "height": 600,
+    "background": {
+        "wall": {
+            "color": "#2c3e50",
+            "h": 180
+        },
+        "floor": {
+            "color": "#1a1a2e",
+            "y": 200,
+            "h": 400
+        }
+    },
+    "props": [
+        {
+            "id": "dance_floor",
+            "color": "#8e44ad",
+            "x": 300,
+            "y": 280,
+            "w": 200,
+            "h": 200,
+            "zIndex": 0,
+            "interactive": "obj_party_dance"
+        },
+        {
+            "id": "dj_booth",
+            "color": "#2980b9",
+            "x": 350,
+            "y": 130,
+            "w": 100,
+            "h": 60,
+            "zIndex": 1,
+            "interactive": "obj_dj_booth"
+        },
+        {
+            "id": "party_bar",
+            "color": "#27ae60",
+            "x": 600,
+            "y": 220,
+            "w": 150,
+            "h": 70,
+            "zIndex": 1,
+            "interactive": "obj_party_drinks"
+        }
+    ],
+    "doors": [
+        {
+            "id": "exit_to_street",
+            "x": 360,
+            "y": 580,
+            "w": 80,
+            "h": 20,
+            "interactive": "exit_party",
+            "label": "SAIR",
+            "color": "#fff",
+            "visible": true
+        }
+    ],
+    "hitboxes": [
+        {
+            "id": "hitbox_dj",
+            "x": 350,
+            "y": 130,
+            "w": 100,
+            "h": 60
+        },
+        {
+            "id": "hitbox_bar",
+            "x": 600,
+            "y": 220,
+            "w": 150,
+            "h": 70
+        }
+    ]
+}
