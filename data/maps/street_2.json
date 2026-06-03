@@ -86,64 +86,46 @@
     {
       "id": "tree_1",
       "asset": "street_tree_2",
-      "x": 451,
-      "y": -110,
-      "w": 200,
-      "h": 320,
+      "x": 424,
+      "y": -76,
+      "w": 203,
+      "h": 268,
       "zIndex": 1
     },
     {
       "id": "tree_2",
       "asset": "street_tree",
-      "x": 1404,
-      "y": -124,
-      "w": 200,
-      "h": 320,
+      "x": 1030,
+      "y": -86,
+      "w": 231,
+      "h": 261,
       "zIndex": 1
     },
     {
       "id": "tree_3",
       "asset": "street_tree",
-      "x": 2600,
-      "y": -120,
+      "x": 1977,
+      "y": -27,
       "w": 200,
-      "h": 320,
+      "h": 198,
       "zIndex": 1
     },
     {
-      "id": "lamp_1",
-      "asset": "street_lamp",
-      "x": 345,
-      "y": 60,
-      "w": 90,
-      "h": 140,
-      "zIndex": 2
-    },
-    {
       "id": "lamp_2",
-      "asset": "street_lamp",
-      "x": 1045,
-      "y": 60,
-      "w": 90,
-      "h": 140,
-      "zIndex": 2
-    },
-    {
-      "id": "lamp_3",
-      "asset": "street_lamp",
-      "x": 2045,
-      "y": 60,
-      "w": 90,
-      "h": 140,
+      "asset": "street_prop_lamp_1",
+      "x": 1072,
+      "y": 12,
+      "w": 154,
+      "h": 192,
       "zIndex": 2
     },
     {
       "id": "bldg_clothing",
       "asset": "street_building_clothes",
-      "x": 600,
-      "y": -160,
-      "w": 300,
-      "h": 360,
+      "x": 568,
+      "y": -161,
+      "w": 405,
+      "h": 361,
       "zIndex": -5
     },
     {
@@ -157,10 +139,10 @@
     },
     {
       "id": "props_1780361770973",
-      "x": 857,
-      "y": -34,
-      "w": 214,
-      "h": 243,
+      "x": 889,
+      "y": -35,
+      "w": 196,
+      "h": 241,
       "asset": "street_tree_2",
       "zIndex": 5
     },
@@ -184,37 +166,37 @@
     },
     {
       "id": "props_1780363805395",
-      "x": 277,
-      "y": 197,
-      "w": 136,
-      "h": 169,
+      "x": 264,
+      "y": 255,
+      "w": 167,
+      "h": 210,
       "asset": "street_tree_3",
       "zIndex": 5
     },
     {
       "id": "props_1780363805395_copia_1780363821627",
-      "x": 756,
-      "y": 200,
-      "w": 136,
-      "h": 169,
+      "x": 917,
+      "y": 231,
+      "w": 176,
+      "h": 222,
       "asset": "street_tree_3",
       "zIndex": 5
     },
     {
       "id": "props_1780363805395_copia_1780363821627_copia_1780363832499",
-      "x": 1232,
-      "y": 198,
-      "w": 136,
-      "h": 169,
+      "x": 1484,
+      "y": 233,
+      "w": 177,
+      "h": 232,
       "asset": "street_tree_3",
       "zIndex": 5
     },
     {
       "id": "props_1780363805395_copia_1780363821627_copia_1780363832499_copia_1780363872207",
-      "x": 1797,
+      "x": 2028,
       "y": 197,
-      "w": 136,
-      "h": 169,
+      "w": 165,
+      "h": 218,
       "asset": "street_tree_3",
       "zIndex": 5
     },
@@ -235,6 +217,96 @@
       "w": 4800,
       "h": 118,
       "zIndex": -9
+    },
+    {
+      "id": "props_1780443045289",
+      "x": 469,
+      "y": 288,
+      "w": 145,
+      "h": 166,
+      "asset": "beach_prop_table_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780443123211",
+      "x": 1173,
+      "y": 195,
+      "w": 209,
+      "h": 173,
+      "asset": "street_prop_therm",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780443045289_copia_6900",
+      "x": 1394,
+      "y": 301,
+      "w": 145,
+      "h": 166,
+      "asset": "beach_prop_table_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780443045289_copia_6900_copia_2284",
+      "x": 2117,
+      "y": 305,
+      "w": 145,
+      "h": 166,
+      "asset": "beach_prop_table_1",
+      "zIndex": 5
+    },
+    {
+      "id": "lamp_2_copia_6077",
+      "asset": "street_prop_lamp_1",
+      "x": 39,
+      "y": -4,
+      "w": 154,
+      "h": 192,
+      "zIndex": 2
+    },
+    {
+      "id": "lamp_2_copia_0614",
+      "asset": "street_prop_lamp_1",
+      "x": 2173,
+      "y": 9,
+      "w": 154,
+      "h": 192,
+      "zIndex": 2
+    },
+    {
+      "id": "props_1780444233946",
+      "x": 1437,
+      "y": -23,
+      "w": 181,
+      "h": 216,
+      "asset": "street_prop_car_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780446205248",
+      "x": 55,
+      "y": 277,
+      "w": 168,
+      "h": 158,
+      "asset": "beach_prop_icecream",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780446255992",
+      "x": 201,
+      "y": -29,
+      "w": 232,
+      "h": 214,
+      "asset": "street_prop_camelo",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780446205248_copia_7823",
+      "x": 2286,
+      "y": 255,
+      "w": 168,
+      "h": 158,
+      "asset": "beach_prop_coco",
+      "zIndex": 5
     }
   ],
   "doors": [

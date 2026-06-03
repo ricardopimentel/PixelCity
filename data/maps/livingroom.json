@@ -1,110 +1,128 @@
 {
-    "name": "livingroom",
-    "width": 800,
-    "height": 600,
-    "background": {
-        "wall": {
-            "asset": "livingroom_wall",
-            "scale": 0.25,
-            "h": 180
-        },
-        "baseboard": {
-            "color": "#3e2723",
-            "y": 180,
-            "h": 20
-        },
-        "floor": {
-            "asset": "livingroom_floor",
-            "scale": 0.25,
-            "y": 200,
-            "h": 400
-        }
+  "name": "livingroom",
+  "width": 800,
+  "height": 600,
+  "background": {
+    "wall": {
+      "asset": "livingroom_wall",
+      "scale": 0.25,
+      "h": 180
     },
-    "props": [
-        {
-            "id": "tv",
-            "asset": "livingroom_tv",
-            "x": 308,
-            "y": 68,
-            "w": 203,
-            "h": 162,
-            "zIndex": 1,
-            "interactive": "obj_tv"
-        },
-        {
-            "id": "sofa",
-            "asset": "livingroom_sofa2",
-            "x": 88,
-            "y": 284,
-            "w": 190,
-            "h": 170,
-            "zIndex": 1,
-            "interactive": "obj_sofa"
-        },
-        {
-            "id": "props_1772931055602",
-            "x": 287,
-            "y": 301,
-            "w": 283,
-            "h": 224,
-            "asset": "livingroom_sofa",
-            "zIndex": 5
-        }
-    ],
-    "doors": [
-        {
-            "id": "exit_to_kitchen",
-            "x": 4,
-            "y": 51,
-            "w": 33,
-            "h": 149,
-            "interactive": "enter_kitchen",
-            "label": "COZINHA",
-            "color": "#f4f4f4",
-            "visible": true
-        },
-        {
-            "id": "exit_to_street",
-            "x": 740,
-            "y": 50,
-            "w": 60,
-            "h": 150,
-            "interactive": "enter_street",
-            "label": "RUA",
-            "color": "#a0522d",
-            "visible": true
-        },
-        {
-            "id": "enter_bedroom",
-            "x": 80,
-            "y": 50,
-            "w": 80,
-            "h": 150,
-            "interactive": "enter_bedroom",
-            "label": "QUARTO",
-            "color": "#deb887",
-            "visible": true
-        }
-    ],
-    "hitboxes": [
-        {
-            "x": 350,
-            "y": 170,
-            "w": 117,
-            "h": 39
-        },
-        {
-            "x": 305,
-            "y": 420,
-            "w": 246,
-            "h": 50
-        },
-        {
-            "id": "hitboxes_1772931114727",
-            "x": 124,
-            "y": 376,
-            "w": 115,
-            "h": 40
-        }
-    ]
+    "baseboard": {
+      "color": "#3e2723",
+      "y": 180,
+      "h": 20
+    },
+    "floor": {
+      "asset": "livingroom_floor",
+      "scale": 0.25,
+      "y": 200,
+      "h": 400
+    }
+  },
+  "props": [
+    {
+      "id": "tv",
+      "asset": "livingroom_tv",
+      "x": 308,
+      "y": 68,
+      "w": 203,
+      "h": 162,
+      "zIndex": 1,
+      "interactive": "obj_tv"
+    },
+    {
+      "id": "sofa",
+      "asset": "livingroom_sofa2",
+      "x": 88,
+      "y": 284,
+      "w": 190,
+      "h": 170,
+      "zIndex": 1,
+      "interactive": "obj_sofa"
+    },
+    {
+      "id": "props_1772931055602",
+      "x": 287,
+      "y": 301,
+      "w": 283,
+      "h": 224,
+      "asset": "livingroom_sofa",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780441394176",
+      "x": 499,
+      "y": 109,
+      "w": 101,
+      "h": 115,
+      "asset": "livingroom_prop_plant_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780441394176_copia_5428",
+      "x": 230,
+      "y": 111,
+      "w": 101,
+      "h": 115,
+      "asset": "livingroom_prop_plant_1",
+      "zIndex": 5
+    }
+  ],
+  "doors": [
+    {
+      "id": "exit_to_kitchen",
+      "x": 4,
+      "y": 51,
+      "w": 33,
+      "h": 149,
+      "interactive": "enter_kitchen",
+      "label": "COZINHA",
+      "color": "#f4f4f4",
+      "visible": true
+    },
+    {
+      "id": "exit_to_street",
+      "x": 740,
+      "y": 50,
+      "w": 60,
+      "h": 150,
+      "interactive": "enter_street",
+      "label": "RUA",
+      "color": "#a0522d",
+      "visible": true
+    },
+    {
+      "id": "enter_bedroom",
+      "x": 80,
+      "y": 50,
+      "w": 80,
+      "h": 150,
+      "interactive": "enter_bedroom",
+      "label": "QUARTO",
+      "color": "#deb887",
+      "visible": true
+    }
+  ],
+  "hitboxes": [
+    {
+      "x": 350,
+      "y": 170,
+      "w": 117,
+      "h": 39
+    },
+    {
+      "x": 305,
+      "y": 420,
+      "w": 246,
+      "h": 50
+    },
+    {
+      "id": "hitboxes_1772931114727",
+      "x": 124,
+      "y": 376,
+      "w": 115,
+      "h": 40
+    }
+  ]
 }

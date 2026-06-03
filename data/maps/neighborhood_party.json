@@ -27,8 +27,8 @@
     {
       "id": "dj_booth",
       "color": "#2980b9",
-      "x": 445,
-      "y": -44,
+      "x": 444,
+      "y": -71,
       "w": 342,
       "h": 350,
       "zIndex": 1,
@@ -38,13 +38,13 @@
     {
       "id": "party_bar",
       "color": "#27ae60",
-      "x": -18,
-      "y": 0,
-      "w": 351,
-      "h": 360,
+      "x": 6,
+      "y": -105,
+      "w": 310,
+      "h": 322,
       "zIndex": 1,
       "interactive": "obj_party_drinks",
-      "asset": "nightclub_bar_1"
+      "asset": "nightclub_prop_bar_3"
     },
     {
       "id": "props_1780365016568",
@@ -53,6 +53,71 @@
       "w": 141,
       "h": 151,
       "asset": "nightclub_dj_desk",
+      "zIndex": 5
+    },
+    {
+      "id": "party_bar_copia_4185",
+      "color": "#27ae60",
+      "x": 41,
+      "y": 22,
+      "w": 262,
+      "h": 255,
+      "zIndex": 1,
+      "interactive": "obj_party_drinks",
+      "asset": "nightclub_prop_bar_4"
+    },
+    {
+      "id": "props_1780437621381",
+      "x": 253,
+      "y": 292,
+      "w": 75,
+      "h": 99,
+      "asset": "nightclub_prop_table_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780437621381_copia_1205",
+      "x": 344,
+      "y": 387,
+      "w": 75,
+      "h": 99,
+      "asset": "nightclub_prop_table_2",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780437621381_copia_2824",
+      "x": 26,
+      "y": 397,
+      "w": 75,
+      "h": 99,
+      "asset": "nightclub_prop_table_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780437695968",
+      "x": 106,
+      "y": 227,
+      "w": 58,
+      "h": 65,
+      "asset": "nightclub_prop_stool",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780437695968_copia_1676",
+      "x": 160,
+      "y": 215,
+      "w": 58,
+      "h": 65,
+      "asset": "nightclub_prop_stool",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780437695968_copia_1676_copia_6084",
+      "x": 219,
+      "y": 216,
+      "w": 58,
+      "h": 65,
+      "asset": "nightclub_prop_stool",
       "zIndex": 5
     }
   ],

@@ -1,85 +1,137 @@
 {
-    "name": "gym",
-    "width": 800,
-    "height": 600,
-    "background": {
-        "wall": {
-            "color": "#cfd8dc",
-            "h": 180
-        },
-        "floor": {
-            "color": "#263238",
-            "y": 200,
-            "h": 400
-        }
+  "name": "gym",
+  "width": 800,
+  "height": 600,
+  "background": {
+    "wall": {
+      "color": "#cfd8dc",
+      "h": 180
     },
-    "props": [
-        {
-            "id": "mirror_1",
-            "color": "#e3f2fd",
-            "x": 50,
-            "y": 40,
-            "w": 300,
-            "h": 100,
-            "zIndex": 1
-        },
-        {
-            "id": "mirror_2",
-            "color": "#e3f2fd",
-            "x": 450,
-            "y": 40,
-            "w": 300,
-            "h": 100,
-            "zIndex": 1
-        },
-        {
-            "id": "treadmill_1",
-            "color": "#455a64",
-            "x": 100,
-            "y": 250,
-            "w": 40,
-            "h": 120,
-            "zIndex": 1
-        },
-        {
-            "id": "treadmill_2",
-            "color": "#455a64",
-            "x": 200,
-            "y": 250,
-            "w": 40,
-            "h": 120,
-            "zIndex": 1
-        },
-        {
-            "id": "treadmill_3",
-            "color": "#455a64",
-            "x": 300,
-            "y": 250,
-            "w": 40,
-            "h": 120,
-            "zIndex": 1
-        },
-        {
-            "id": "weights",
-            "color": "#b0bec5",
-            "x": 580,
-            "y": 250,
-            "w": 140,
-            "h": 40,
-            "zIndex": 1
-        }
-    ],
-    "doors": [
-        {
-            "id": "exit_to_street",
-            "x": 360,
-            "y": 580,
-            "w": 80,
-            "h": 20,
-            "interactive": "exit_gym",
-            "label": "SAIR",
-            "color": "#fff",
-            "visible": true
-        }
-    ]
+    "floor": {
+      "color": "#263238",
+      "y": 200,
+      "h": 400
+    }
+  },
+  "props": [
+    {
+      "id": "mirror_1",
+      "color": "#e3f2fd",
+      "x": 50,
+      "y": 40,
+      "w": 300,
+      "h": 100,
+      "zIndex": 1
+    },
+    {
+      "id": "mirror_2",
+      "color": "#e3f2fd",
+      "x": 450,
+      "y": 40,
+      "w": 300,
+      "h": 100,
+      "zIndex": 1
+    },
+    {
+      "id": "treadmill_1",
+      "color": "#455a64",
+      "x": 18,
+      "y": 109,
+      "w": 105,
+      "h": 135,
+      "zIndex": 1,
+      "asset": "gyn_prop_belt"
+    },
+    {
+      "id": "treadmill_2",
+      "color": "#455a64",
+      "x": 41,
+      "y": 370,
+      "w": 119,
+      "h": 159,
+      "zIndex": 1,
+      "asset": "gyn_prop_weights"
+    },
+    {
+      "id": "treadmill_3",
+      "color": "#455a64",
+      "x": 568,
+      "y": 334,
+      "w": 118,
+      "h": 120,
+      "zIndex": 1,
+      "asset": "gyn_prop_bike"
+    },
+    {
+      "id": "weights",
+      "color": "#b0bec5",
+      "x": 603,
+      "y": 70,
+      "w": 180,
+      "h": 175,
+      "zIndex": 1,
+      "asset": "gyn_prop_counter"
+    },
+    {
+      "id": "treadmill_1_copia_1214",
+      "color": "#455a64",
+      "x": 115,
+      "y": 107,
+      "w": 105,
+      "h": 135,
+      "zIndex": 1,
+      "asset": "gyn_prop_belt"
+    },
+    {
+      "id": "treadmill_3_copia_4834",
+      "color": "#455a64",
+      "x": 679,
+      "y": 331,
+      "w": 118,
+      "h": 120,
+      "zIndex": 1,
+      "asset": "gyn_prop_bike"
+    },
+    {
+      "id": "treadmill_2_copia_7740",
+      "color": "#455a64",
+      "x": 340,
+      "y": 65,
+      "w": 119,
+      "h": 159,
+      "zIndex": 1,
+      "asset": "gyn_prop_weights"
+    },
+    {
+      "id": "props_1780444405767",
+      "x": 41,
+      "y": -25,
+      "w": 313,
+      "h": 176,
+      "asset": "gyn_prop_window",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780444405767_copia_4498",
+      "x": 445,
+      "y": -26,
+      "w": 313,
+      "h": 176,
+      "asset": "gyn_prop_window",
+      "zIndex": 5
+    }
+  ],
+  "doors": [
+    {
+      "id": "exit_to_street",
+      "x": 360,
+      "y": 580,
+      "w": 80,
+      "h": 20,
+      "interactive": "exit_gym",
+      "label": "SAIR",
+      "color": "#fff",
+      "visible": true
+    }
+  ]
 }
