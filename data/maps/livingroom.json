@@ -14,7 +14,7 @@
       "h": 20
     },
     "floor": {
-      "asset": "livingroom_floor",
+      "asset": "bedroom_bg_floor_2",
       "scale": 0.25,
       "y": 200,
       "h": 400
@@ -66,6 +66,15 @@
       "w": 101,
       "h": 115,
       "asset": "livingroom_prop_plant_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1780454142475",
+      "x": 579,
+      "y": 40,
+      "w": 100,
+      "h": 95,
+      "asset": "kitchen_prop_window_1",
       "zIndex": 5
     }
   ],

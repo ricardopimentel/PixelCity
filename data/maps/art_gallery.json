@@ -1,0 +1,80 @@
+{
+  "name": "art_gallery",
+  "width": 800,
+  "height": 600,
+  "background": {
+    "wall": {
+      "color": "#fafafa",
+      "h": 180
+    },
+    "floor": {
+      "color": "#cfd8dc",
+      "y": 200,
+      "h": 400
+    }
+  },
+  "props": [
+    {
+      "id": "painting_1",
+      "color": "#e91e63",
+      "x": 100,
+      "y": 40,
+      "w": 120,
+      "h": 140,
+      "zIndex": 1,
+      "interactive": "obj_art_painting",
+      "asset": "street_prop_camelo"
+    },
+    {
+      "id": "painting_2",
+      "color": "#9c27b0",
+      "x": 340,
+      "y": 40,
+      "w": 120,
+      "h": 140,
+      "zIndex": 1,
+      "interactive": "obj_art_painting",
+      "asset": "street_prop_camelo"
+    },
+    {
+      "id": "sculpture_1",
+      "color": "#78909c",
+      "x": 580,
+      "y": 110,
+      "w": 140,
+      "h": 180,
+      "zIndex": 1,
+      "interactive": "obj_art_sculpture",
+      "asset": "street_prop_therm"
+    }
+  ],
+  "doors": [
+    {
+      "id": "exit_to_street_left",
+      "x": 360,
+      "y": 580,
+      "w": 80,
+      "h": 20,
+      "interactive": "exit_art_gallery",
+      "label": "SAIR",
+      "color": "#fff",
+      "visible": true
+    }
+  ],
+  "hitboxes": [
+    {
+      "id": "wall_top",
+      "x": 0,
+      "y": 0,
+      "w": 800,
+      "h": 200
+    },
+    {
+      "id": "hitbox_sculpture",
+      "x": 580,
+      "y": 140,
+      "w": 140,
+      "h": 120
+    }
+  ]
+}

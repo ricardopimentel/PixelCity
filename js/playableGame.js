@@ -134,7 +134,7 @@ class PlayableGame {
         this.editorSelectedCategory = 'props';
         this.editorSelectedObject = null;
         this.editorMapsList = [
-            'street', 'street_2', 'bedroom', 'bathroom', 'livingroom', 'kitchen',
+            'street', 'street_2', 'street_left', 'furniture_store', 'art_gallery', 'bedroom', 'bathroom', 'livingroom', 'kitchen',
             'coffee_shop', 'diner_kitchen', 'gym', 'plaza', 'grocery',
             'clothing_store', 'neighborhood_party'
         ];
@@ -202,6 +202,10 @@ class PlayableGame {
         // Skip if already loaded or not a standard room
         if (this.maps[roomName]) {
             this.currentMapData = this.maps[roomName];
+
+            // Sync map boundaries if specified
+            if (this.currentMapData.width) this.mapBounds.width = this.currentMapData.width;
+            if (this.currentMapData.height) this.mapBounds.height = this.currentMapData.height;
 
             // Re-apply special logic if needed
             if (roomName === 'bathroom' && this.currentMapData.doors) {
@@ -1070,6 +1074,7 @@ class PlayableGame {
                             if (panel) panel.style.display = this.isEditorMode ? 'block' : 'none';
 
                             if (this.isEditorMode) {
+                                this.initEditorUI();
                                 this.updateEditorObjectList();
                                 this.updateEditorPropertyFields();
                             }
@@ -2825,6 +2830,43 @@ class PlayableGame {
             await this.loadMapData('street');
             this.player.x = 2650;
             this.player.y = 450;
+        } else if (this.nearDoor === 'enter_street_left') {
+            const isAct2Unlocked = this.completedMissions.includes('m06_a_grande_festa') || (this.currentMissionId && this.currentMissionId.startsWith('m0') && parseInt(this.currentMissionId.replace('m', '')) >= 6);
+            if (isAct2Unlocked) {
+                this.currentRoom = 'street_left';
+                await this.loadMapData('street_left');
+                this.player.x = 2550;
+                this.player.y = 450;
+            } else {
+                alert('Acesso Bloqueado! Esta zona da cidade é desbloqueada no Ato II.');
+            }
+        } else if (this.nearDoor === 'exit_street_left') {
+            this.currentRoom = 'street';
+            await this.loadMapData('street');
+            this.player.x = 150;
+            this.player.y = 450;
+        } else if (this.nearDoor === 'enter_furniture_store') {
+            this.checkTasks('go_to_location', 'furniture_store');
+            this.currentRoom = 'furniture_store';
+            await this.loadMapData('furniture_store');
+            this.player.x = 400;
+            this.player.y = 450;
+        } else if (this.nearDoor === 'exit_furniture_store') {
+            this.currentRoom = 'street_left';
+            await this.loadMapData('street_left');
+            this.player.x = 800;
+            this.player.y = 450;
+        } else if (this.nearDoor === 'enter_art_gallery') {
+            this.checkTasks('go_to_location', 'art_gallery');
+            this.currentRoom = 'art_gallery';
+            await this.loadMapData('art_gallery');
+            this.player.x = 400;
+            this.player.y = 450;
+        } else if (this.nearDoor === 'exit_art_gallery') {
+            this.currentRoom = 'street_left';
+            await this.loadMapData('street_left');
+            this.player.x = 1800;
+            this.player.y = 450;
         } else if (this.nearDoor === 'enter_clothing_store') {
             this.checkTasks('go_to_location', 'clothing_store');
             this.currentRoom = 'clothing_store';
@@ -2843,6 +2885,8 @@ class PlayableGame {
                 return;
             }
             this.checkTasks('go_to_location', 'neighborhood_party');
+            this.checkTasks('go_to_location', 'bonys_club');
+            this.checkTasks('visit_any_location', 'bonys_club');
             this.currentRoom = 'neighborhood_party';
             await this.loadMapData('neighborhood_party');
             this.player.x = 400;
@@ -2915,7 +2959,6 @@ class PlayableGame {
                 this.openWardrobeModal();
             }
 
-            // Se clicar na Cama, TV, etc
             if (this.nearDoor === 'obj_tv') {
                 this.player.attributes.charisma += 0.2;
                 if (this.player.interests.includes('movies') || this.player.interests.includes('humor')) {
@@ -2924,9 +2967,22 @@ class PlayableGame {
                 } else {
                     objMsg['obj_tv'] = 'Assistindo TV pra passar o tempo... (+0.2 Carisma)';
                 }
-            }
-
-            if (this.nearDoor === 'obj_diner') {
+            } else if (this.nearDoor === 'obj_furniture_counter' || this.nearDoor === 'obj_furniture_bed') {
+                this.checkTasks('go_to_location', 'furniture_store');
+                if (confirm('Deseja comprar uma Cama Confortável de Solteiro por R$ 150?')) {
+                    if (this.stats.money >= 150) {
+                        this.stats.money -= 150;
+                        this.checkTasks('buy_item', 'item_category_bed');
+                        alert('Cama comprada com sucesso! Ela foi entregue no seu apartamento.');
+                    } else {
+                        alert('Dinheiro insuficiente! Você precisa de R$ 150.');
+                    }
+                }
+            } else if (this.nearDoor === 'obj_art_painting' || this.nearDoor === 'obj_art_sculpture') {
+                this.checkTasks('go_to_location', 'art_gallery');
+                this.player.attributes.intelligence = (this.player.attributes.intelligence || 0) + 0.3;
+                alert('Você contemplou uma bela obra de arte moderna na galeria. (+0.3 Inteligência)');
+            } else if (this.nearDoor === 'obj_diner') {
                 this.checkTasks('go_to_location', 'downtown_diner');
             } else if (this.nearDoor === 'obj_clothing_counter' || this.nearDoor === 'obj_clothing_rack') {
                 this.openStoreModal();
@@ -4042,6 +4098,18 @@ class PlayableGame {
             this.taskProgress[t.id] = false;
         });
 
+        // Auto-handle stat_decrease tasks on mission start (e.g. m09_o_rival)
+        mission.tasks.forEach(t => {
+            if (t.type === 'stat_decrease') {
+                this.taskProgress[t.id] = true;
+                if (t.target === 'popularity') {
+                    if (this.player.attributes) {
+                        this.player.attributes.charisma = Math.max(0, (this.player.attributes.charisma || 0) + (t.value / 10));
+                    }
+                }
+            }
+        });
+
         // Find mentor NPC - Search by ID 'mentor' or Name 'Lucas'
         const mentorNpc = this.npcs.find(n => n.id === 'mentor' || n.name === 'Lucas');
         const senderName = mentorNpc ? mentorNpc.name : "Lucas"; // Default to Lucas as name
@@ -4063,9 +4131,6 @@ class PlayableGame {
             linkedMissionId: missionData ? missionData.id : null
         };
         this.player.messages.unshift(msgObj);
-
-        // Show visual alert on screen
-        // this.showVisualAlert(`Nova Mensagem de ${sender}: ${title}`);
 
         // Update unread icon
         this.updateUnreadBadges();
@@ -4113,16 +4178,26 @@ class PlayableGame {
             let isComplete = false;
 
             if (task.type === actionType) {
-                if (actionType === 'interact_object' || actionType === 'go_to_location' || actionType === 'dialogue_choice' || actionType === 'buy_item' || actionType === 'pay_rent') {
-                    if (task.target === target) isComplete = true;
+                if (actionType === 'interact_object' || actionType === 'go_to_location' || actionType === 'dialogue_choice' || actionType === 'buy_item' || actionType === 'pay_rent' || actionType === 'give_gift' || actionType === 'action_perform' || actionType === 'host_event' || actionType === 'job_promotion') {
+                    if (task.target === target || (Array.isArray(task.target) && task.target.includes(target))) {
+                        isComplete = true;
+                    }
+                } else if (actionType === 'visit_any_location') {
+                    if (Array.isArray(task.target) && task.target.includes(target)) {
+                        isComplete = true;
+                    } else if (task.target === target) {
+                        isComplete = true;
+                    }
                 } else if (actionType === 'stat_reach') {
-                    // For stat reach, 'target' is the stat name (e.g. 'hunger', 'money')
-                    // 'value' is the current value of that stat
                     if (task.target === target && value >= task.value) isComplete = true;
                 } else if (actionType === 'work_shift') {
                     if (task.target === target && value >= task.value) isComplete = true;
                 } else if (actionType === 'npc_relationship') {
-                    if (task.target === target && value >= task.value) isComplete = true;
+                    if (task.target === 'any_npc') {
+                        if (value >= task.value) isComplete = true;
+                    } else if (task.target === target && value >= task.value) {
+                        isComplete = true;
+                    }
                 }
             }
 
@@ -4181,14 +4256,44 @@ class PlayableGame {
                 this.player.attributes.charisma += (mission.rewards.popularity / 10);
             }
 
+            if (mission.rewards.mood !== undefined) {
+                this.stats.health = Math.min(100, this.stats.health + mission.rewards.mood);
+            }
+
             if (mission.rewards.unlock_job) {
                 this.characterState.unlocked_jobs = this.characterState.unlocked_jobs || [];
-                this.characterState.unlocked_jobs.push(mission.rewards.unlock_job);
+                if (!this.characterState.unlocked_jobs.includes(mission.rewards.unlock_job)) {
+                    this.characterState.unlocked_jobs.push(mission.rewards.unlock_job);
+                }
+            }
+            if (mission.rewards.unlock_location) {
+                this.characterState.unlocked_locations = this.characterState.unlocked_locations || [];
+                if (!this.characterState.unlocked_locations.includes(mission.rewards.unlock_location)) {
+                    this.characterState.unlocked_locations.push(mission.rewards.unlock_location);
+                }
+            }
+            if (mission.rewards.unlock_action) {
+                this.characterState.unlocked_actions = this.characterState.unlocked_actions || [];
+                if (!this.characterState.unlocked_actions.includes(mission.rewards.unlock_action)) {
+                    this.characterState.unlocked_actions.push(mission.rewards.unlock_action);
+                }
             }
         }
 
-        // this.showVisualAlert(`Missão '${mission.title}' Concluída!`);
-        alert(`Missão '${mission.title}' Concluída!`);
+        // SPECIAL TRANSITION: Act 1 completion -> Act 2 opening!
+        if (mission.id === 'm06_a_grande_festa') {
+            alert(`🎉 ATO I CONCLUÍDO! 🎉\n\n🌟 ATO II: RUMOS DA CAPITAL DESBLOQUEADO! 🌟\n\nVocê conquistou seu espaço em Pixel City, brilhou na pista de dança da boate e abriu caminhos para um novo capítulo da sua jornada!`);
+            
+            // Transportar o personagem de volta para o seu quarto
+            this.currentRoom = 'bedroom';
+            this.loadMapData('bedroom').then(() => {
+                this.player.x = 200;
+                this.player.y = 230;
+                this.player.direction = 0;
+            });
+        } else {
+            alert(`Missão '${mission.title}' Concluída!`);
+        }
 
         this.updateStatsUI();
         this.updateQuestsUI();
@@ -4519,10 +4624,15 @@ class PlayableGame {
                     const isClothingMissionActive = this.currentMissionId === 'm05_banho_de_loja' || this.currentMissionId === 'm06_a_grande_festa';
                     const isClothingMissionDone = this.completedMissions.includes('m05_banho_de_loja') || this.completedMissions.includes('m06_a_grande_festa');
                     const isRentPaid = this.completedMissions.includes('m04_suor_e_lagrimas') || (this.characterState && this.characterState.rentPaid);
-                    const isUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
+                    const isRightUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
 
-                    if (!isUnlocked) {
+                    if (!isRightUnlocked) {
                         hitboxes.push({ x: 2700, y: 120, w: 30, h: 460 });
+                    }
+
+                    const isAct2Unlocked = this.completedMissions.includes('m06_a_grande_festa') || (this.currentMissionId && this.currentMissionId.startsWith('m0') && parseInt(this.currentMissionId.replace('m', '')) >= 6);
+                    if (!isAct2Unlocked) {
+                        hitboxes.push({ x: -50, y: 120, w: 100, h: 460 });
                     }
                 }
 
@@ -4562,8 +4672,10 @@ class PlayableGame {
             // Remove idle lock
         }
 
-        // Set map boundaries based on room
-        if (this.currentRoom === 'street' || this.currentRoom === 'street_2') {
+        // Set map boundaries based on room / currentMapData
+        if (this.currentMapData && this.currentMapData.width) {
+            this.mapBounds.width = this.currentMapData.width;
+        } else if (this.currentRoom === 'street' || this.currentRoom === 'street_2' || this.currentRoom === 'street_left') {
             this.mapBounds.width = 2800;
         } else {
             this.mapBounds.width = 800; // standard room width
@@ -4579,7 +4691,8 @@ class PlayableGame {
 
         // Ensure we don't show areas outside the map boundaries
         // Upper bound - allow scrolling higher up in street to see tall buildings
-        const minY = (this.currentRoom === 'street' || this.currentRoom === 'street_2') ? -250 : 0;
+        const isAnyStreet = this.currentRoom === 'street' || this.currentRoom === 'street_2' || this.currentRoom === 'street_left';
+        const minY = isAnyStreet ? -250 : 0;
 
         if (this.canvas.width >= this.mapBounds.width) {
             camX = -(this.canvas.width - this.mapBounds.width) / 2;
@@ -5087,11 +5200,17 @@ class PlayableGame {
         }
 
         // Custom dynamic render for the roadblock gate
-        if (prop.id === 'roadblock_gate') {
-            const isClothingMissionActive = this.currentMissionId === 'm05_banho_de_loja' || this.currentMissionId === 'm06_a_grande_festa';
-            const isClothingMissionDone = this.completedMissions.includes('m05_banho_de_loja') || this.completedMissions.includes('m06_a_grande_festa');
-            const isRentPaid = this.completedMissions.includes('m04_suor_e_lagrimas') || (this.characterState && this.characterState.rentPaid);
-            const isUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
+        if (prop.id === 'roadblock_gate' || prop.id === 'roadblock_gate_left') {
+            let isUnlocked = false;
+
+            if (prop.id === 'roadblock_gate') {
+                const isClothingMissionActive = this.currentMissionId === 'm05_banho_de_loja' || this.currentMissionId === 'm06_a_grande_festa';
+                const isClothingMissionDone = this.completedMissions.includes('m05_banho_de_loja') || this.completedMissions.includes('m06_a_grande_festa');
+                const isRentPaid = this.completedMissions.includes('m04_suor_e_lagrimas') || (this.characterState && this.characterState.rentPaid);
+                isUnlocked = isClothingMissionActive || isClothingMissionDone || isRentPaid;
+            } else if (prop.id === 'roadblock_gate_left') {
+                isUnlocked = this.completedMissions.includes('m06_a_grande_festa') || (this.currentMissionId && this.currentMissionId.startsWith('m0') && parseInt(this.currentMissionId.replace('m', '')) >= 6);
+            }
 
             if (isUnlocked) {
                 this.ctx.restore();
@@ -5148,13 +5267,12 @@ class PlayableGame {
             if (prop.repeatX) {
                 const pattern = this.ctx.createPattern(img, 'repeat-x');
                 const matrix = new DOMMatrix();
-                // We translate the pattern to match the prop's world position
                 matrix.translateSelf(drawX, prop.y);
                 matrix.scaleSelf(scale, scale);
                 pattern.setTransform(matrix);
 
                 this.ctx.fillStyle = pattern;
-                // Fill the entire width to ensure background tiling
+                // Fill extended width for smooth parallax looping
                 this.ctx.fillRect(-1000, prop.y, w + 2000, (prop.h || img.height) * scale);
             } else {
                 const dw = (prop.w || img.width) * scale;
@@ -6229,6 +6347,9 @@ class PlayableGame {
         const mapSelect = document.getElementById('editor-map-select');
         if (!mapSelect) return;
 
+        // Limpar opções anteriores para evitar duplicatas ou não atualização
+        mapSelect.innerHTML = '';
+
         // Populate Maps
         this.editorMapsList.forEach(map => {
             const opt = document.createElement('option');
@@ -6433,7 +6554,32 @@ class PlayableGame {
                 createField('Pos Y', 'y', 'number');
                 createField('Altura H', 'h', 'number');
             } else if (obj.type === 'floor') {
-                createField('Asset Name', 'asset');
+                const div = document.createElement('div');
+                div.style.marginBottom = '10px';
+                div.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Imagem da Calçada (Asset)</label>`;
+                const sel = document.createElement('select');
+                sel.style.width = '100%'; sel.style.background = '#111'; sel.style.color = '#fff'; sel.style.padding = '5px';
+                sel.style.border = '1px solid #444'; sel.style.borderRadius = '3px'; sel.style.fontSize = '0.8rem';
+                
+                const noneOpt = document.createElement('option');
+                noneOpt.value = "";
+                noneOpt.textContent = "-- Nenhuma (Apenas Cor) --";
+                if (!target.asset) noneOpt.selected = true;
+                sel.appendChild(noneOpt);
+
+                Object.keys(this.envAssets).sort().forEach(asset => {
+                    const opt = document.createElement('option');
+                    opt.value = asset; opt.textContent = asset;
+                    if (target.asset === asset) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+
+                sel.onchange = (e) => { 
+                    target.asset = e.target.value || undefined; 
+                };
+                div.appendChild(sel);
+                container.appendChild(div);
+
                 createField('Pos Y', 'y', 'number');
                 createField('Altura H', 'h', 'number');
                 createField('Escala', 'scale', 'number');

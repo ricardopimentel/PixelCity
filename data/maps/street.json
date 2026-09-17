@@ -192,22 +192,40 @@
       "asset": "street_close_1"
     },
     {
+      "id": "roadblock_gate_left",
+      "x": -162,
+      "y": 134,
+      "w": 343,
+      "h": 417,
+      "zIndex": 10,
+      "asset": "street_close_1"
+    },
+    {
       "id": "plate_street_name_1",
-      "x": 2558,
-      "y": 50,
+      "x": 2565,
+      "y": 67,
       "w": 160,
       "h": 177,
       "asset": "street_name",
+      "zIndex": 5
+    },
+    {
+      "id": "plate_street_name_1_copia_4876",
+      "x": -19,
+      "y": 59,
+      "w": 160,
+      "h": 177,
+      "asset": "street_prop_street_name_left",
       "zIndex": 5
     }
   ],
   "doors": [
     {
       "id": "exit_to_apt",
-      "x": 50,
-      "y": 140,
-      "w": 40,
-      "h": 460,
+      "x": 93,
+      "y": 83,
+      "w": 196,
+      "h": 165,
       "interactive": "exit_street",
       "label": "APTOS",
       "color": "#5d4037",
@@ -215,8 +233,8 @@
     },
     {
       "id": "enter_coffee",
-      "x": 650,
-      "y": 50,
+      "x": 702,
+      "y": -302,
       "w": 200,
       "h": 550,
       "interactive": "enter_coffee_shop",
@@ -226,8 +244,8 @@
     },
     {
       "id": "enter_gym",
-      "x": 2257,
-      "y": 30,
+      "x": 2267,
+      "y": -303,
       "w": 250,
       "h": 550,
       "interactive": "enter_gym",
@@ -237,10 +255,10 @@
     },
     {
       "id": "enter_plaza",
-      "x": 1700,
-      "y": 50,
-      "w": 250,
-      "h": 550,
+      "x": 1605,
+      "y": -298,
+      "w": 443,
+      "h": 549,
       "interactive": "enter_plaza",
       "label": "PRAÇA",
       "color": "transparent",
@@ -248,8 +266,8 @@
     },
     {
       "id": "enter_grocery",
-      "x": 1150,
-      "y": 9,
+      "x": 1148,
+      "y": -300,
       "w": 250,
       "h": 550,
       "interactive": "enter_grocery",
@@ -265,6 +283,17 @@
       "h": 550,
       "interactive": "enter_street_2",
       "label": "OUTRA RUA",
+      "color": "transparent",
+      "visible": false
+    },
+    {
+      "id": "enter_street_left",
+      "x": -3,
+      "y": 129,
+      "w": 87,
+      "h": 564,
+      "interactive": "enter_street_left",
+      "label": "RUA OESTE",
       "color": "transparent",
       "visible": false
     }

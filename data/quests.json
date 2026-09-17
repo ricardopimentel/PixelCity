@@ -208,6 +208,159 @@
                 "popularity": 50,
                 "money": 300
             }
+        },
+        {
+            "id": "m06_upgrade_casa",
+            "title": "Saindo do Chão",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m06_a_grande_festa"
+            },
+            "mentor_message": "E aí, curtiu a festa ontem? Deu pra ver que a cidade não dorme. Mas ó, vi que você ainda tá capotando naquele colchão fino no chão. Suas costas vão pedir arrego logo, logo. Passa na loja de móveis e compra uma cama de verdade. Um pouco de conforto ajuda a recuperar a energia mais rápido pra aguentar o tranco!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "go_to_location",
+                    "target": "furniture_store",
+                    "description": "Visite a Loja de Móveis no centro."
+                },
+                {
+                    "id": "t2",
+                    "type": "buy_item",
+                    "target": "item_category_bed",
+                    "description": "Compre e instale uma Cama Nova no seu apartamento."
+                }
+            ],
+            "rewards": {
+                "energy_recovery_rate": 1.5,
+                "popularity": 10
+            }
+        },
+        {
+            "id": "m07_as_tribos",
+            "title": "Gente Fina, Elegante e Sincera",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m06_upgrade_casa"
+            },
+            "mentor_message": "Apartamento ficando chique, hein? Agora você precisa circular. Na capital, quem não é visto não é lembrado. Tem três picos bons: a Academia (cheio de marombeiro), a Galeria de Arte (o pessoal mais cult) e a Boate Bonys (onde a grana rola solta). Escolhe um desses lugares, puxa papo com a galera e faz pelo menos um amigo de verdade.",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "visit_any_location",
+                    "target": [
+                        "gym",
+                        "art_gallery",
+                        "bonys_club"
+                    ],
+                    "description": "Visite a Academia, a Galeria de Arte ou a Boate Bonys."
+                },
+                {
+                    "id": "t2",
+                    "type": "npc_relationship",
+                    "target": "any_npc",
+                    "value": 60,
+                    "description": "Alcance 60% de amizade (Status: Amigo) com qualquer NPC novo."
+                }
+            ],
+            "rewards": {
+                "unlock_action": "group_hangout",
+                "popularity": 30
+            }
+        },
+        {
+            "id": "m08_o_amor_esta_no_ar",
+            "title": "Coração de Néon",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m07_as_tribos"
+            },
+            "mentor_message": "Tô sabendo que você já tá cheio de contatos! Mas e o coração, como tá? Vida de solteiro na cidade grande é boa, mas ter um contatinho é melhor ainda. Compra um presente maneiro na lojinha, chama aquele NPC que você gostou pra sair e vê se rola o primeiro beijo. Boa sorte, campeão!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "buy_item",
+                    "target": "item_category_gift",
+                    "description": "Compre um presente (ex: Flores, Chocolate, Vinil)."
+                },
+                {
+                    "id": "t2",
+                    "type": "give_gift",
+                    "target": "any_npc",
+                    "description": "Dê o presente para o NPC que você quer conquistar."
+                },
+                {
+                    "id": "t3",
+                    "type": "action_perform",
+                    "target": "kiss_npc",
+                    "description": "Realize a ação 'Beijar' com sucesso (requer Romance alto)."
+                }
+            ],
+            "rewards": {
+                "mood": 100,
+                "popularity": 50
+            }
+        },
+        {
+            "id": "m09_o_rival",
+            "title": "Tropeço na Escada",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m08_o_amor_esta_no_ar"
+            },
+            "mentor_message": "Cara, deu ruim. Fiquei sabendo do vexame na inauguração do shopping. Aquele mauricinho arrogante, o Victor, te humilhou na frente de todo mundo por causa do seu sotaque e das suas roupas, e a galera riu. Sua popularidade despencou. Não deixa barato! Levanta a cabeça, vai malhar, melhora esse visual e organiza uma festa no seu apê pra mostrar quem é que manda.",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "stat_decrease",
+                    "target": "popularity",
+                    "value": -40,
+                    "description": "Sua popularidade caiu após o encontro com Victor (Evento Automático)."
+                },
+                {
+                    "id": "t2",
+                    "type": "interact_object",
+                    "target": "gym_weights",
+                    "description": "Puxe ferro na academia para melhorar seu Carisma/Aparência."
+                },
+                {
+                    "id": "t3",
+                    "type": "host_event",
+                    "target": "apartment_party",
+                    "description": "Compre salgadinhos e bebidas e organize uma festa no seu apartamento."
+                }
+            ],
+            "rewards": {
+                "popularity": 80,
+                "unlock_location": "vip_lounge"
+            }
+        },
+        {
+            "id": "m10_olhos_no_topo",
+            "title": "A Volta por Cima",
+            "trigger": {
+                "type": "mission_completed",
+                "target": "m09_o_rival"
+            },
+            "mentor_message": "A festa foi um sucesso absurdo! Até o Victor ficou com inveja porque a galera toda foi pro seu apê. Agora você tem acesso à Área VIP da cidade. O próximo passo é juntar grana pesada. Tem uma cobertura (Penthouse) pra alugar no bairro nobre. Foca no trabalho, consegue uma promoção e vamos mirar no topo do mundo!",
+            "tasks": [
+                {
+                    "id": "t1",
+                    "type": "job_promotion",
+                    "target": "any_job",
+                    "description": "Trabalhe duro até conseguir uma promoção para o Nível 2 do seu emprego."
+                },
+                {
+                    "id": "t2",
+                    "type": "stat_reach",
+                    "target": "money",
+                    "value": 1500,
+                    "description": "Junte R$ 1.500 na carteira para o depósito da cobertura."
+                }
+            ],
+            "rewards": {
+                "unlock_location": "real_estate_agency"
+            }
         }
     ]
 }

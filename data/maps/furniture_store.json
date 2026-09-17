@@ -1,0 +1,132 @@
+{
+  "name": "furniture_store",
+  "width": 800,
+  "height": 600,
+  "background": {
+    "wall": {
+      "color": "#f0ede6",
+      "h": 180
+    },
+    "floor": {
+      "color": "#d7ccc8",
+      "y": 200,
+      "h": 400
+    }
+  },
+  "props": [
+    {
+      "id": "furniture_counter",
+      "color": "#795548",
+      "x": 300,
+      "y": 120,
+      "w": 200,
+      "h": 150,
+      "zIndex": 1,
+      "interactive": "obj_furniture_counter",
+      "asset": "clothingstore_prop_counter"
+    },
+    {
+      "id": "bed_display",
+      "color": "#8d6e63",
+      "x": 94,
+      "y": 80,
+      "w": 180,
+      "h": 180,
+      "zIndex": 1,
+      "interactive": "obj_furniture_bed",
+      "asset": "bedroom_prop_bed"
+    },
+    {
+      "id": "table_display",
+      "color": "#a1887f",
+      "x": 497,
+      "y": 75,
+      "w": 160,
+      "h": 150,
+      "zIndex": 1,
+      "interactive": "obj_furniture_counter",
+      "asset": "beach_prop_table_1"
+    },
+    {
+      "id": "props_1789683354637",
+      "x": -24,
+      "y": 83,
+      "w": 153,
+      "h": 182,
+      "asset": "bedroom_prop_bed_0",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683485423",
+      "x": 638,
+      "y": 63,
+      "w": 163,
+      "h": 146,
+      "asset": "livingroom_prop_tv_2",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683519189",
+      "x": 680,
+      "y": 217,
+      "w": 144,
+      "h": 102,
+      "asset": "livingroom_prop_tv_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683547183",
+      "x": 697,
+      "y": 318,
+      "w": 130,
+      "h": 93,
+      "asset": "kitchen_prop_chair_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683564559",
+      "x": -25,
+      "y": 254,
+      "w": 186,
+      "h": 184,
+      "asset": "bedroom_prop_bed_1",
+      "zIndex": 5
+    }
+  ],
+  "doors": [
+    {
+      "id": "exit_to_street_left",
+      "x": 360,
+      "y": 580,
+      "w": 80,
+      "h": 20,
+      "interactive": "exit_furniture_store",
+      "label": "SAIR",
+      "color": "#fff",
+      "visible": true
+    }
+  ],
+  "hitboxes": [
+    {
+      "id": "wall_top",
+      "x": 0,
+      "y": 0,
+      "w": 800,
+      "h": 200
+    },
+    {
+      "id": "hitbox_counter",
+      "x": 300,
+      "y": 150,
+      "w": 200,
+      "h": 100
+    },
+    {
+      "id": "hitbox_bed",
+      "x": 60,
+      "y": 130,
+      "w": 180,
+      "h": 120
+    }
+  ]
+}
