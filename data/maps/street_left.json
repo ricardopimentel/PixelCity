@@ -49,17 +49,6 @@
       "zIndex": -13
     },
     {
-      "id": "road_lines",
-      "color": "#ffeb3b",
-      "x": 0,
-      "y": 350,
-      "w": 40,
-      "h": 10,
-      "zIndex": -1,
-      "repeatX": true,
-      "interval": 80
-    },
-    {
       "id": "bg_far",
       "asset": "street_bg_far",
       "x": -1000,
@@ -162,6 +151,173 @@
       "w": 499,
       "h": 469,
       "asset": "street_prop_tree_6",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789746966596",
+      "x": -226,
+      "y": 368,
+      "w": 3027,
+      "h": 10,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffd500",
+      "color": "#ffd500"
+    },
+    {
+      "id": "props_1789747053107",
+      "x": -367,
+      "y": 614,
+      "w": 3172,
+      "h": 126,
+      "asset": "street_pavement_1",
+      "zIndex": -9,
+      "fillMode": "repeat",
+      "scale": 0.23
+    },
+    {
+      "id": "props_1789747180296",
+      "x": 1045,
+      "y": -212,
+      "w": 390,
+      "h": 423,
+      "asset": "street_prop_street_poste_5",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747180296_copia_0663",
+      "x": 2032,
+      "y": -213,
+      "w": 390,
+      "h": 423,
+      "asset": "street_prop_street_poste_5",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747180296_copia_0663_copia_1096",
+      "x": 402,
+      "y": -190,
+      "w": 371,
+      "h": 402,
+      "asset": "street_prop_street_poste_5",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747336539",
+      "x": 859,
+      "y": 30,
+      "w": 589,
+      "h": 576,
+      "asset": "street_prop_street_car_1",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747445747",
+      "x": 1210,
+      "y": 469,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747445747_copia_9367",
+      "x": 1089,
+      "y": 470,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747445747_copia_0890",
+      "x": 1325,
+      "y": 469,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747336539_copia_8510",
+      "x": 976,
+      "y": 27,
+      "w": 589,
+      "h": 576,
+      "asset": "street_prop_street_car_2",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747445747_copia_0890_copia_7160",
+      "x": 1430,
+      "y": 469,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747445747_copia_0890_copia_7160_copia_2786",
+      "x": 1532,
+      "y": 470,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747524882",
+      "x": 1397,
+      "y": 55,
+      "w": 233,
+      "h": 161,
+      "asset": "street_prop_therm",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747562531",
+      "x": 1262,
+      "y": -100,
+      "w": 274,
+      "h": 316,
+      "asset": "street_prop_street_banca",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507",
+      "x": 1544,
+      "y": 17,
+      "w": 460,
+      "h": 632,
+      "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507_copia_8581",
+      "x": 661,
+      "y": 19,
+      "w": 460,
+      "h": 632,
+      "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507_copia_2093",
+      "x": 2269,
+      "y": 18,
+      "w": 460,
+      "h": 632,
+      "asset": "street_prop_street_poste_3",
       "zIndex": 5
     }
   ],

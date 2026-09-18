@@ -5263,21 +5263,55 @@ class PlayableGame {
         if (prop.asset && this.envAssets[prop.asset]) {
             const img = this.envAssets[prop.asset];
             const scale = prop.scale || 1.0;
+            const dh = (prop.h || img.height) * scale;
 
             if (prop.repeatX) {
+                // Suporte total ao fundo Parallax contínuo em loop infinito
                 const pattern = this.ctx.createPattern(img, 'repeat-x');
-                const matrix = new DOMMatrix();
-                matrix.translateSelf(drawX, prop.y);
-                matrix.scaleSelf(scale, scale);
-                pattern.setTransform(matrix);
+                if (pattern) {
+                    const matrix = new DOMMatrix();
+                    matrix.translateSelf(drawX, prop.y);
+                    matrix.scaleSelf(scale, scale);
+                    pattern.setTransform(matrix);
 
-                this.ctx.fillStyle = pattern;
-                // Fill extended width for smooth parallax looping
-                this.ctx.fillRect(-1000, prop.y, w + 2000, (prop.h || img.height) * scale);
+                    this.ctx.fillStyle = pattern;
+                    this.ctx.fillRect(-1000, prop.y, w + 2000, dh);
+                }
             } else {
-                const dw = (prop.w || img.width) * scale;
-                const dh = (prop.h || img.height) * scale;
-                this.ctx.drawImage(img, drawX, prop.y, dw, dh);
+                const fillMode = prop.fillMode || 'stretch';
+                const boxW = prop.w || (img.width * scale);
+                const boxH = prop.h || (img.height * scale);
+
+                // Renderizar cor de fundo se definida
+                if (prop.fillColor || prop.color) {
+                    const bgCol = prop.fillColor || prop.color;
+                    this.ctx.fillStyle = bgCol;
+                    this.ctx.fillRect(drawX, prop.y, boxW, boxH);
+                }
+
+                if (fillMode === 'repeat') {
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.rect(drawX, prop.y, boxW, boxH);
+                    this.ctx.clip();
+
+                    const pattern = this.ctx.createPattern(img, 'repeat');
+                    if (pattern) {
+                        if (typeof DOMMatrix !== 'undefined') {
+                            const matrix = new DOMMatrix();
+                            matrix.translateSelf(drawX, prop.y);
+                            matrix.scaleSelf(scale, scale);
+                            pattern.setTransform(matrix);
+                        }
+                        this.ctx.fillStyle = pattern;
+                        this.ctx.fillRect(drawX, prop.y, boxW, boxH);
+                    } else {
+                        this.ctx.drawImage(img, drawX, prop.y, boxW, boxH);
+                    }
+                    this.ctx.restore();
+                } else {
+                    this.ctx.drawImage(img, drawX, prop.y, boxW, boxH);
+                }
             }
         } else if (prop.type === 'fountain') {
             const scale = prop.scale || 1.0;
@@ -5369,8 +5403,13 @@ class PlayableGame {
             this.ctx.fillRect(drawX + 25, prop.y - 12, 4, 15);
             this.ctx.fillRect(drawX + 15, prop.y - 12, 12, 4);
         } else {
-            this.ctx.fillStyle = prop.color || '#f0f';
-            if (prop.repeatX && prop.interval) {
+            const fillColor = prop.fillColor || prop.color || '#f0f';
+            this.ctx.fillStyle = fillColor;
+
+            if (prop.fillMode === 'repeat' && !prop.interval) {
+                // Se o modo for repetir (tile) sem intervalo em um bloco sólido sem asset
+                this.ctx.fillRect(drawX, prop.y, prop.w || 50, prop.h || 50);
+            } else if (prop.repeatX && prop.interval) {
                 const startX = prop.x;
                 const endX = w + 1000;
                 for (let xi = startX; xi < endX; xi += prop.interval) {
@@ -5503,8 +5542,12 @@ class PlayableGame {
 
             // Road
             if (bg.road) {
+                const roadY = bg.road.y || 250;
+                const roadH = bg.road.h || 350;
+
+                // Asfalto apenas (sem faixa programada)
                 this.ctx.fillStyle = bg.road.color || '#424242';
-                this.ctx.fillRect(0, bg.road.y || 250, w, bg.road.h || 350);
+                this.ctx.fillRect(0, roadY, w, roadH);
             }
         }
 
@@ -6030,10 +6073,11 @@ class PlayableGame {
                     const scale = prop.scale || 1.0;
                     let baseWidth = prop.w || 50;
                     let baseHeight = prop.h || 50;
-                    if (prop.asset && this.envAssets[prop.asset]) {
-                        const img = this.envAssets[prop.asset];
-                        baseWidth = prop.w || img.width;
-                        baseHeight = prop.h || img.height;
+                    if (!prop.w && prop.asset && this.envAssets[prop.asset]) {
+                        baseWidth = this.envAssets[prop.asset].width * scale;
+                    }
+                    if (!prop.h && prop.asset && this.envAssets[prop.asset]) {
+                        baseHeight = this.envAssets[prop.asset].height * scale;
                     }
 
                     // Apply parallax to culling position if defined
@@ -6042,8 +6086,8 @@ class PlayableGame {
                         drawX += this.camera.x * (1 - prop.parallax);
                     }
 
-                    const dw = baseWidth * scale;
-                    const dh = baseHeight * scale;
+                    const dw = baseWidth;
+                    const dh = baseHeight;
 
                     if (prop.repeatX) {
                         entities.push({
@@ -6617,43 +6661,130 @@ class PlayableGame {
         } else if (obj.interactive !== undefined) {
             createField('ID Interação / Telep', 'interactive');
         }
-        if (obj.asset !== undefined || this.editorSelectedCategory === 'props') {
-            const div = document.createElement('div');
-            div.style.marginBottom = '10px';
-            div.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Asset (Sprite)</label>`;
-            const sel = document.createElement('select');
-            sel.style.width = '100%'; sel.style.background = '#111'; sel.style.color = '#fff'; sel.style.padding = '5px';
-            sel.style.border = '1px solid #444';
+        if (target.asset !== undefined || obj.asset !== undefined || this.editorSelectedCategory === 'props' || obj.type === 'floor') {
+            const divAsset = document.createElement('div');
+            divAsset.style.marginBottom = '10px';
+            divAsset.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Asset (Sprite)</label>`;
+            const selAsset = document.createElement('select');
+            selAsset.style.width = '100%'; selAsset.style.background = '#111'; selAsset.style.color = '#fff'; selAsset.style.padding = '5px';
+            selAsset.style.border = '1px solid #444'; selAsset.style.borderRadius = '3px'; selAsset.style.fontSize = '0.8rem';
             
-            // Opção fallback caso não tenha asset
             const noneOpt = document.createElement('option');
             noneOpt.value = "";
             noneOpt.textContent = "-- Nenhum --";
-            if (!obj.asset) noneOpt.selected = true;
-            sel.appendChild(noneOpt);
+            if (!target.asset) noneOpt.selected = true;
+            selAsset.appendChild(noneOpt);
 
             Object.keys(this.envAssets).sort().forEach(asset => {
                 const opt = document.createElement('option');
                 opt.value = asset; opt.textContent = asset;
-                if (obj.asset === asset) opt.selected = true;
-                sel.appendChild(opt);
+                if (target.asset === asset) opt.selected = true;
+                selAsset.appendChild(opt);
             });
-            sel.onchange = (e) => { 
-                obj.asset = e.target.value || undefined; 
+            selAsset.onchange = (e) => { 
+                target.asset = e.target.value || undefined;
+                this.updateEditorPropertyFields();
             };
-            div.appendChild(sel);
-            container.appendChild(div);
+            divAsset.appendChild(selAsset);
+            container.appendChild(divAsset);
+
+            // Seletor de Modo de Preenchimento (Esticar ou Repetir lado a lado)
+            const divMode = document.createElement('div');
+            divMode.style.marginBottom = '10px';
+            divMode.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Preenchimento Imagem</label>`;
+            const selMode = document.createElement('select');
+            selMode.style.width = '100%'; selMode.style.background = '#111'; selMode.style.color = '#fff'; selMode.style.padding = '5px';
+            selMode.style.border = '1px solid #444'; selMode.style.borderRadius = '3px'; selMode.style.fontSize = '0.8rem';
+            
+            const optStretch = document.createElement('option');
+            optStretch.value = 'stretch';
+            optStretch.textContent = 'Esticar imagem';
+            if ((target.fillMode || 'stretch') === 'stretch' && !target.repeatX) optStretch.selected = true;
+            selMode.appendChild(optStretch);
+
+            const optRepeat = document.createElement('option');
+            optRepeat.value = 'repeat';
+            optRepeat.textContent = 'Repetir lado a lado (Tile)';
+            if (target.fillMode === 'repeat' || (target.repeatX && !target.parallax)) optRepeat.selected = true;
+            selMode.appendChild(optRepeat);
+
+            selMode.onchange = (e) => {
+                target.fillMode = e.target.value;
+                delete target.repeatX;
+                this.updateEditorPropertyFields();
+            };
+            divMode.appendChild(selMode);
+            container.appendChild(divMode);
+
+            // Campo de Escala da Imagem (%)
+            const divScale = document.createElement('div');
+            divScale.style.marginBottom = '10px';
+            divScale.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Escala da Imagem (%)</label>`;
+            const inputScale = document.createElement('input');
+            inputScale.type = 'number';
+            const scaleVal = target.scale !== undefined ? Math.round(target.scale * 100) : 100;
+            inputScale.value = scaleVal;
+            inputScale.min = '1';
+            inputScale.max = '500';
+            inputScale.style.width = '100%'; inputScale.style.background = '#111'; inputScale.style.color = '#fff'; inputScale.style.border = '1px solid #444'; inputScale.style.padding = '5px'; inputScale.style.borderRadius = '3px'; inputScale.style.fontSize = '0.8rem';
+            
+            inputScale.oninput = (e) => {
+                const percent = parseFloat(e.target.value);
+                if (!isNaN(percent) && percent > 0) {
+                    target.scale = percent / 100;
+                } else {
+                    delete target.scale;
+                }
+            };
+            divScale.appendChild(inputScale);
+            container.appendChild(divScale);
         }
 
-        if (obj.x !== undefined) createField('Posição X', 'x', 'number');
-        if (obj.y !== undefined) createField('Posição Y', 'y', 'number');
-        if (obj.w !== undefined) createField('Largura (W)', 'w', 'number');
-        if (obj.h !== undefined) createField('Altura (H)', 'h', 'number');
-        if (obj.zIndex !== undefined) createField('Z-Index (Camada)', 'zIndex', 'number');
-        if (obj.color !== undefined) createField('Cor / Opacidade', 'color');
-        if (obj.style !== undefined) createField('Estilo (ex: simple)', 'style');
-        if (obj.parallax !== undefined) createField('Parallax (0-1)', 'parallax', 'number');
-        if (obj.repeatX !== undefined) createField('Repetir X (true/false)', 'repeatX');
+        // Campo de Cor de Preenchimento / Fundo
+        if (this.editorSelectedCategory === 'props' || this.editorSelectedCategory === 'doors' || target.fillColor !== undefined || target.color !== undefined) {
+            const divColor = document.createElement('div');
+            divColor.style.marginBottom = '10px';
+            divColor.innerHTML = `<label style="display:block; font-size: 0.7rem; color: #aaa; margin-bottom: 3px;">Cor de Preenchimento / Fundo</label>`;
+            
+            const colorContainer = document.createElement('div');
+            colorContainer.style.display = 'flex';
+            colorContainer.style.gap = '5px';
+
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = target.fillColor || (target.color && target.color.startsWith('#') ? target.color : '#ffffff');
+            colorInput.style.flex = '1'; colorInput.style.height = '30px'; colorInput.style.background = '#111'; colorInput.style.border = '1px solid #444'; colorInput.style.cursor = 'pointer';
+
+            const clearBtn = document.createElement('button');
+            clearBtn.textContent = 'Remover Cor';
+            clearBtn.style.padding = '4px 8px'; clearBtn.style.background = '#444'; clearBtn.style.color = '#fff'; clearBtn.style.border = 'none'; clearBtn.style.borderRadius = '3px'; clearBtn.style.fontSize = '0.7rem'; clearBtn.style.cursor = 'pointer';
+
+            colorInput.oninput = (e) => {
+                target.fillColor = e.target.value;
+                target.color = e.target.value;
+            };
+
+            clearBtn.onclick = () => {
+                delete target.fillColor;
+                if (this.editorSelectedCategory === 'props') {
+                    delete target.color;
+                }
+                colorInput.value = '#ffffff';
+            };
+
+            colorContainer.appendChild(colorInput);
+            colorContainer.appendChild(clearBtn);
+            divColor.appendChild(colorContainer);
+            container.appendChild(divColor);
+        }
+
+        if (target.x !== undefined) createField('Posição X', 'x', 'number');
+        if (target.y !== undefined) createField('Posição Y', 'y', 'number');
+        if (target.w !== undefined) createField('Largura (W)', 'w', 'number');
+        if (target.h !== undefined) createField('Altura (H)', 'h', 'number');
+        if (target.zIndex !== undefined) createField('Z-Index (Camada)', 'zIndex', 'number');
+        if (target.style !== undefined) createField('Estilo (ex: simple)', 'style');
+        if (target.parallax !== undefined) createField('Parallax (0-1)', 'parallax', 'number');
     }
 
     editorAddObject() {
