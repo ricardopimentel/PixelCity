@@ -84,19 +84,19 @@
     {
       "id": "tree_2",
       "asset": "street_prop_tree_7",
-      "x": 870,
-      "y": -215,
-      "w": 359,
-      "h": 424,
+      "x": 1009,
+      "y": 43,
+      "w": 143,
+      "h": 164,
       "zIndex": 1
     },
     {
       "id": "tree_3",
       "asset": "street_tree",
-      "x": 2600,
-      "y": -120,
+      "x": 2530,
+      "y": -17,
       "w": 200,
-      "h": 320,
+      "h": 202,
       "zIndex": 1
     },
     {
@@ -110,8 +110,8 @@
     },
     {
       "id": "bldg_furniture_store",
-      "x": 605,
-      "y": -180,
+      "x": 670,
+      "y": -181,
       "w": 395,
       "h": 407,
       "asset": "street_building_furniture_store",
@@ -128,35 +128,35 @@
     },
     {
       "id": "props_1789683119913",
-      "x": 1030,
-      "y": -215,
-      "w": 376,
-      "h": 392,
+      "x": 1262,
+      "y": 107,
+      "w": 95,
+      "h": 50,
       "asset": "street_prop_tree_11",
       "zIndex": 5
     },
     {
       "id": "props_1789683156077",
-      "x": 1412,
-      "y": -194,
-      "w": 393,
-      "h": 392,
+      "x": 1578,
+      "y": 91,
+      "w": 105,
+      "h": 70,
       "asset": "street_prop_tree_10",
       "zIndex": 5
     },
     {
       "id": "props_1789683186547",
-      "x": 1828,
-      "y": -264,
-      "w": 499,
-      "h": 469,
+      "x": 2028,
+      "y": 57,
+      "w": 122,
+      "h": 130,
       "asset": "street_prop_tree_6",
       "zIndex": 5
     },
     {
       "id": "props_1789746966596",
-      "x": -226,
-      "y": 368,
+      "x": -195,
+      "y": 366,
       "w": 3027,
       "h": 10,
       "asset": "shelf",
@@ -177,37 +177,19 @@
     },
     {
       "id": "props_1789747180296",
-      "x": 1045,
-      "y": -212,
-      "w": 390,
-      "h": 423,
-      "asset": "street_prop_street_poste_5",
-      "zIndex": 5
-    },
-    {
-      "id": "props_1789747180296_copia_0663",
-      "x": 2032,
-      "y": -213,
-      "w": 390,
-      "h": 423,
-      "asset": "street_prop_street_poste_5",
-      "zIndex": 5
-    },
-    {
-      "id": "props_1789747180296_copia_0663_copia_1096",
-      "x": 402,
-      "y": -190,
-      "w": 371,
-      "h": 402,
+      "x": 1175,
+      "y": 46,
+      "w": 113,
+      "h": 165,
       "asset": "street_prop_street_poste_5",
       "zIndex": 5
     },
     {
       "id": "props_1789747336539",
-      "x": 859,
-      "y": 30,
-      "w": 589,
-      "h": 576,
+      "x": 1088,
+      "y": 420,
+      "w": 133,
+      "h": 182,
       "asset": "street_prop_street_car_1",
       "zIndex": 5
     },
@@ -246,10 +228,10 @@
     },
     {
       "id": "props_1789747336539_copia_8510",
-      "x": 976,
-      "y": 27,
-      "w": 589,
-      "h": 576,
+      "x": 1206,
+      "y": 453,
+      "w": 128,
+      "h": 153,
       "asset": "street_prop_street_car_2",
       "zIndex": 5
     },
@@ -277,8 +259,8 @@
     },
     {
       "id": "props_1789747524882",
-      "x": 1397,
-      "y": 55,
+      "x": 1478,
+      "y": 50,
       "w": 233,
       "h": 161,
       "asset": "street_prop_therm",
@@ -286,38 +268,161 @@
     },
     {
       "id": "props_1789747562531",
-      "x": 1262,
-      "y": -100,
-      "w": 274,
-      "h": 316,
+      "x": 1339,
+      "y": -6,
+      "w": 195,
+      "h": 191,
       "asset": "street_prop_street_banca",
       "zIndex": 5
     },
     {
-      "id": "props_1789748242507",
-      "x": 1544,
-      "y": 17,
-      "w": 460,
-      "h": 632,
-      "asset": "street_prop_street_poste_3",
-      "zIndex": 5
-    },
-    {
-      "id": "props_1789748242507_copia_8581",
-      "x": 661,
-      "y": 19,
-      "w": 460,
-      "h": 632,
-      "asset": "street_prop_street_poste_3",
-      "zIndex": 5
-    },
-    {
       "id": "props_1789748242507_copia_2093",
-      "x": 2269,
-      "y": 18,
-      "w": 460,
-      "h": 632,
+      "x": 885,
+      "y": 469,
+      "w": 169,
+      "h": 206,
       "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507_copia_2093_copia_6836",
+      "x": 1312,
+      "y": 480,
+      "w": 169,
+      "h": 206,
+      "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507_copia_2093_copia_6836_copia_3120",
+      "x": 1745,
+      "y": 481,
+      "w": 169,
+      "h": 206,
+      "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683119913_copia_3033",
+      "x": 1583,
+      "y": 635,
+      "w": 95,
+      "h": 50,
+      "asset": "street_prop_tree_11",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683119913_copia_3033_copia_9564",
+      "x": 1126,
+      "y": 638,
+      "w": 95,
+      "h": 50,
+      "asset": "street_prop_tree_11",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683119913_copia_3033_copia_9564_copia_9601",
+      "x": 2126,
+      "y": 639,
+      "w": 95,
+      "h": 50,
+      "asset": "street_prop_tree_11",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683156077_copia_3985",
+      "x": 1927,
+      "y": 627,
+      "w": 105,
+      "h": 70,
+      "asset": "street_prop_tree_10",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683186547_copia_1392",
+      "x": 2240,
+      "y": 48,
+      "w": 122,
+      "h": 130,
+      "asset": "street_prop_tree_6",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789748242507_copia_2093_copia_6836_copia_3120_copia_6867",
+      "x": 2275,
+      "y": 486,
+      "w": 169,
+      "h": 206,
+      "asset": "street_prop_street_poste_3",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683156077_copia_3985_copia_3590",
+      "x": 2372,
+      "y": 151,
+      "w": 105,
+      "h": 70,
+      "asset": "street_prop_tree_10",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789683156077_copia_3985_copia_3590_copia_8192",
+      "x": 2164,
+      "y": 153,
+      "w": 105,
+      "h": 70,
+      "asset": "street_prop_tree_10",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747445747_copia_0890_copia_7160_copia_2786_copia_2981",
+      "x": 1634,
+      "y": 470,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747445747_copia_0890_copia_7160_copia_2786_copia_2981_copia_8810",
+      "x": 1739,
+      "y": 469,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747445747_copia_0890_copia_7160_copia_2786_copia_2981_copia_8810_copia_4183",
+      "x": 1835,
+      "y": 471,
+      "w": 5,
+      "h": 126,
+      "asset": "shelf",
+      "zIndex": 5,
+      "fillColor": "#ffffff",
+      "color": "#ffffff"
+    },
+    {
+      "id": "props_1789747180296_copia_0530",
+      "x": 568,
+      "y": 39,
+      "w": 113,
+      "h": 165,
+      "asset": "street_prop_street_poste_5",
+      "zIndex": 5
+    },
+    {
+      "id": "props_1789747180296_copia_1823",
+      "x": 2272,
+      "y": 45,
+      "w": 113,
+      "h": 165,
+      "asset": "street_prop_street_poste_5",
       "zIndex": 5
     }
   ],
